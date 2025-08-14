@@ -910,16 +910,139 @@ ${hostname} login: <span class="cursor">_</span>
                                 'Downloads': { type: 'directory', contents: {} },
                                 'Music': { type: 'directory', contents: {} },
                                 'Pictures': { type: 'directory', contents: {} },
-                                'Videos': { type: 'directory', contents: {} }
+                                'Videos': { type: 'directory', contents: {} },
+                                'test.txt': { type: 'file', content: 'Hello World\nThis is a test file.\n', size: 25 },
+                                'config.conf': { type: 'file', content: '# Configuration file\nserver_name = localhost\nport = 8080\n', size: 45 },
+                                'script.sh': { type: 'file', content: '#!/bin/bash\necho "Hello from script!"\nls -la\n', size: 35 },
+                                'notes.txt': { type: 'file', content: 'Important notes:\n- Meeting at 2 PM\n- Backup database\n- Update system\n', size: 55 }
                             }
                         },
-                        'home': { type: 'directory', contents: {} },
-                        'etc': { type: 'directory', contents: {} },
-                        'var': { type: 'directory', contents: {} },
-                        'usr': { type: 'directory', contents: {} },
-                        'tmp': { type: 'directory', contents: {} }
+                        'home': { 
+                            type: 'directory', 
+                            contents: {
+                                'user1': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'Documents': { type: 'directory', contents: {} },
+                                        'Downloads': { type: 'directory', contents: {} },
+                                        'profile.txt': { type: 'file', content: 'User profile information\nName: User One\nEmail: user1@example.com\n', size: 55 }
+                                    }
+                                }
+                            }
+                        },
+                        'etc': { 
+                            type: 'directory', 
+                            contents: {
+                                'debian_version': { type: 'file', content: '11.6', size: 4 },
+                                'hostname': { type: 'file', content: 'debian', size: 6 },
+                                'passwd': { type: 'file', content: 'root:x:0:0:root:/bin/bash\n', size: 25 },
+                                'network': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'interfaces': { type: 'file', content: 'auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet dhcp\n', size: 45 }
+                                    }
+                                },
+                                'ssh': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'sshd_config': { type: 'file', content: 'Port 22\nProtocol 2\nHostKey /etc/ssh/ssh_host_rsa_key\nPermitRootLogin yes\n', size: 65 }
+                                    }
+                                }
+                            }
+                        },
+                        'var': { 
+                            type: 'directory', 
+                            contents: {
+                                'log': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'syslog': { type: 'file', content: 'Jan 21 10:30:01 debian systemd: Starting system...\nJan 21 10:30:02 debian sshd: Server listening on 0.0.0.0 port 22\n', size: 95 }
+                                    }
+                                },
+                                'cache': { type: 'directory', contents: {} },
+                                'spool': { type: 'directory', contents: {} }
+                            }
+                        },
+                        'usr': { 
+                            type: 'directory', 
+                            contents: {
+                                'bin': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'bash': { type: 'file', content: '#!/bin/bash\n# Bash shell executable\n', size: 30 },
+                                        'ls': { type: 'file', content: '#!/bin/bash\n# List directory contents\n', size: 35 },
+                                        'cat': { type: 'file', content: '#!/bin/bash\n# Concatenate files\n', size: 30 }
+                                    }
+                                },
+                                'sbin': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'sshd': { type: 'file', content: '#!/bin/bash\n# SSH daemon\n', size: 25 },
+                                        'init': { type: 'file', content: '#!/bin/bash\n# System init process\n', size: 30 }
+                                    }
+                                },
+                                'local': { 
+                                    type: 'directory', 
+                                    contents: {
+                                        'bin': { 
+                                            type: 'directory', 
+                                            contents: {
+                                                'custom_script': { type: 'file', content: '#!/bin/bash\necho "Custom script executed!"\n', size: 35 }
+                                            }
+                                        },
+                                        'etc': { 
+                                            type: 'directory', 
+                                            contents: {
+                                                'custom.conf': { type: 'file', content: '# Custom configuration\nsetting1 = value1\nsetting2 = value2\n', size: 45 }
+                                            }
+                                        },
+                                        'src': { 
+                                            type: 'directory', 
+                                            contents: {
+                                                'project1': { 
+                                                    type: 'directory', 
+                                                    contents: {
+                                                        'main.py': { type: 'file', content: '#!/usr/bin/env python3\nprint("Hello from Python!")\n', size: 35 },
+                                                        'README.md': { type: 'file', content: '# Project 1\n\nThis is a sample project.\n', size: 30 },
+                                                        'config.py': { type: 'file', content: '# Configuration file\nDEBUG = True\nPORT = 8000\nHOST = "localhost"\n', size: 50 },
+                                                        'utils.py': { type: 'file', content: '#!/usr/bin/env python3\n# Utility functions\ndef helper():\n    return "Helper function"\n', size: 55 },
+                                                        'tests': { 
+                                                            type: 'directory', 
+                                                            contents: {
+                                                                'test_main.py': { type: 'file', content: '#!/usr/bin/env python3\nimport unittest\nfrom main import *\n\nclass TestMain(unittest.TestCase):\n    def test_basic(self):\n        self.assertTrue(True)\n', size: 95 }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        'tmp': { 
+                            type: 'directory', 
+                            contents: {
+                                'temp_file.txt': { type: 'file', content: 'This is a temporary file\n', size: 25 }
+                            }
+                        }
                     }
                 }
+            };
+
+            // Track installed packages and their status
+            let installedPackages = {
+                'openssh-server': { status: 'active', enabled: true },
+                'standard-system-utilities': { status: 'active', enabled: true }
+            };
+
+            // Nano editor state
+            let nanoState = {
+                isActive: false,
+                currentFile: null,
+                content: '',
+                cursorPosition: 0,
+                scrollOffset: 0
             };
 
             function getDirectoryContents(path) {
@@ -966,6 +1089,203 @@ ${hostname} login: <span class="cursor">_</span>
                 return false;
             }
 
+            function createFile(path, name, content = '') {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory') {
+                    if (!dir.contents[name]) {
+                        dir.contents[name] = { type: 'file', content: content, size: content.length };
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function updateFileContent(path, name, newContent) {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory' && dir.contents[name] && dir.contents[name].type === 'file') {
+                    dir.contents[name].content = newContent;
+                    dir.contents[name].size = newContent.length;
+                    return true;
+                }
+                return false;
+            }
+
+            function getFileContent(path, name) {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory' && dir.contents[name] && dir.contents[name].type === 'file') {
+                    return dir.contents[name].content;
+                }
+                return null;
+            }
+
+            function startNanoEditor(filePath) {
+                const fileName = filePath.split('/').pop();
+                const fileContent = getFileContent(currentDirectory, fileName);
+                
+                if (fileContent === null) {
+                    // File doesn't exist, create it
+                    createFile(currentDirectory, fileName, '');
+                }
+                
+                nanoState.isActive = true;
+                nanoState.currentFile = fileName;
+                nanoState.content = getFileContent(currentDirectory, fileName) || '';
+                nanoState.cursorPosition = 0;
+                nanoState.scrollOffset = 0;
+                
+                showNanoEditor();
+            }
+
+            function showNanoEditor() {
+                const loginContent = document.getElementById('loginContent');
+                const currentPrompt = getCurrentPrompt();
+                
+                // Clear screen and show nano editor
+                loginContent.innerHTML = '';
+                
+                const nanoHeader = `GNU nano 5.4    ${nanoState.currentFile}\n\n`;
+                const nanoFooter = '\n^X Exit  ^O Write Out  ^R Read File  ^Y Prev Page  ^K Cut Text  ^C Cur Pos\n^V Next Page  ^U Paste Text  ^T To Spell  ^W Where Is  ^G Get Help\n\n';
+                
+                // Display file content with cursor
+                let displayContent = nanoState.content;
+                if (nanoState.cursorPosition < displayContent.length) {
+                    displayContent = displayContent.slice(0, nanoState.cursorPosition) + '<span class="cursor">█</span>' + displayContent.slice(nanoState.cursorPosition);
+                } else {
+                    displayContent += '<span class="cursor">█</span>';
+                }
+                
+                loginContent.innerHTML = nanoHeader + displayContent + nanoFooter;
+                
+                // Handle nano keyboard input
+                document.addEventListener('keydown', handleNanoInput);
+            }
+
+            function handleNanoInput(e) {
+                if (!nanoState.isActive) return;
+                
+                e.preventDefault();
+                
+                switch(e.key) {
+                    case 'Control':
+                        // Handle Ctrl combinations
+                        break;
+                    case 'x':
+                    case 'X':
+                        if (e.ctrlKey) {
+                            // Ctrl+X - Exit
+                            exitNanoEditor();
+                        } else {
+                            // Regular x key
+                            insertCharacter('x');
+                        }
+                        break;
+                    case 'o':
+                    case 'O':
+                        if (e.ctrlKey) {
+                            // Ctrl+O - Write Out (Save)
+                            saveFile();
+                        } else {
+                            // Regular o key
+                            insertCharacter('o');
+                        }
+                        break;
+                    case 'Backspace':
+                        if (nanoState.cursorPosition > 0) {
+                            nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition - 1) + 
+                                               nanoState.content.slice(nanoState.cursorPosition);
+                            nanoState.cursorPosition--;
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'Delete':
+                        if (nanoState.cursorPosition < nanoState.content.length) {
+                            nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition) + 
+                                               nanoState.content.slice(nanoState.cursorPosition + 1);
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (nanoState.cursorPosition > 0) {
+                            nanoState.cursorPosition--;
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (nanoState.cursorPosition < nanoState.content.length) {
+                            nanoState.cursorPosition++;
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'ArrowUp':
+                        // Simple line navigation (go to previous line if possible)
+                        const lines = nanoState.content.split('\n');
+                        const currentLine = nanoState.content.substring(0, nanoState.cursorPosition).split('\n').length - 1;
+                        if (currentLine > 0) {
+                            const prevLineStart = nanoState.content.split('\n').slice(0, currentLine).join('\n').length + 1;
+                            nanoState.cursorPosition = Math.min(prevLineStart, nanoState.cursorPosition);
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'ArrowDown':
+                        // Simple line navigation (go to next line if possible)
+                        const lines2 = nanoState.content.split('\n');
+                        const currentLine2 = nanoState.content.substring(0, nanoState.cursorPosition).split('\n').length - 1;
+                        if (currentLine2 < lines2.length - 1) {
+                            const nextLineStart = nanoState.content.split('\n').slice(0, currentLine2 + 1).join('\n').length + 1;
+                            nanoState.cursorPosition = Math.min(nextLineStart, nanoState.content.length);
+                            showNanoEditor();
+                        }
+                        break;
+                    case 'Home':
+                        nanoState.cursorPosition = 0;
+                        showNanoEditor();
+                        break;
+                    case 'End':
+                        nanoState.cursorPosition = nanoState.content.length;
+                        showNanoEditor();
+                        break;
+                    case 'Enter':
+                        insertCharacter('\n');
+                        break;
+                    case 'Tab':
+                        insertCharacter('    '); // 4 spaces
+                        break;
+                    default:
+                        if (e.key.length === 1) {
+                            insertCharacter(e.key);
+                        }
+                }
+            }
+
+            function insertCharacter(char) {
+                nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition) + 
+                                   char + 
+                                   nanoState.content.slice(nanoState.cursorPosition);
+                nanoState.cursorPosition += char.length;
+                showNanoEditor();
+            }
+
+            function saveFile() {
+                updateFileContent(currentDirectory, nanoState.currentFile, nanoState.content);
+                exitNanoEditor();
+            }
+
+            function exitNanoEditor() {
+                nanoState.isActive = false;
+                nanoState.currentFile = null;
+                nanoState.content = '';
+                nanoState.cursorPosition = 0;
+                
+                // Remove nano event listener
+                document.removeEventListener('keydown', handleNanoInput);
+                
+                // Return to shell
+                const loginContent = document.getElementById('loginContent');
+                const currentPrompt = getCurrentPrompt();
+                loginContent.innerHTML = currentPrompt + '<span class="cursor">_</span>';
+                loginContent.scrollTop = loginContent.scrollHeight;
+            }
+
             function executeCommand(cmd) {
                 const hostname = installationData.hostname || 'debian';
                 let output = '';
@@ -989,7 +1309,8 @@ ${hostname} login: <span class="cursor">_</span>
                                 output += 'drwxr-xr-x  3 root root 4096 Jan 21 10:25 ..\n';
                                 for (const [name, item] of Object.entries(lsDir.contents)) {
                                     const type = item.type === 'directory' ? 'd' : '-';
-                                    output += `${type}rwx------  2 root root 4096 Jan 21 10:30 ${name}\n`;
+                                    const size = item.type === 'file' ? item.size : 4096;
+                                    output += `${type}rwx------  2 root root ${size} Jan 21 10:30 ${name}\n`;
                                 }
                             } else {
                                 const items = Object.keys(lsDir.contents);
@@ -1154,7 +1475,30 @@ ${hostname} login: <span class="cursor">_</span>
                         if (args[1] === '/etc/debian_version') {
                             output = '11.6';
                         } else if (args[1]) {
-                            output = `cat: ${args[1]}: No such file or directory`;
+                            const filePath = args[1];
+                            let fileContent = null;
+                            
+                            if (filePath.startsWith('/')) {
+                                // Absolute path
+                                const pathParts = filePath.split('/').filter(p => p);
+                                if (pathParts.length >= 2) {
+                                    const dirPath = '/' + pathParts.slice(0, -1).join('/');
+                                    const fileName = pathParts[pathParts.length - 1];
+                                    const dir = getDirectoryContents(dirPath);
+                                    if (dir && dir.contents && dir.contents[fileName] && dir.contents[fileName].type === 'file') {
+                                        fileContent = dir.contents[fileName].content;
+                                    }
+                                }
+                            } else {
+                                // Relative path
+                                fileContent = getFileContent(currentDirectory, filePath);
+                            }
+                            
+                            if (fileContent !== null) {
+                                output = fileContent;
+                            } else {
+                                output = `cat: ${filePath}: No such file or directory`;
+                            }
                         } else {
                             output = 'cat: missing operand\nTry "cat --help" for more information.';
                         }
@@ -1205,7 +1549,8 @@ ${hostname} login: <span class="cursor">_</span>
                             output = 'nano: missing operand\nTry "nano --help" for more information.';
                         } else {
                             const fileName = args[1];
-                            output = `GNU nano 5.4    ${fileName}\n\n[ File created or opened ]\n\n^X Exit  ^O Write Out  ^R Read File  ^Y Prev Page  ^K Cut Text  ^C Cur Pos\n^V Next Page  ^U Paste Text  ^T To Spell  ^W Where Is  ^G Get Help\n\n(Simulated nano editor - file operations not fully implemented)`;
+                            startNanoEditor(fileName);
+                            return; // Don't show output, nano editor will take over
                         }
                         break;
                         
@@ -1337,72 +1682,48 @@ ${hostname} login: <span class="cursor">_</span>
                             const action = args[1];
                             const service = args[2] || '';
                             
-                            // Simulate service states
-                            const services = {
-                                'ssh': { status: 'active', enabled: true },
-                                'sshd': { status: 'active', enabled: true },
-                                'openssh-server': { status: 'active', enabled: true },
-                                'samba': { status: 'inactive', enabled: false },
-                                'smbd': { status: 'inactive', enabled: false },
-                                'nmbd': { status: 'inactive', enabled: false },
-                                'isc-dhcp-server': { status: 'inactive', enabled: false },
-                                'dhcpd': { status: 'inactive', enabled: false },
-                                'bind9': { status: 'inactive', enabled: false },
-                                'named': { status: 'inactive', enabled: false },
-                                'vsftpd': { status: 'inactive', enabled: false },
-                                'apache2': { status: 'inactive', enabled: false },
-                                'nginx': { status: 'inactive', enabled: false },
-                                'mysql': { status: 'inactive', enabled: false },
-                                'mariadb': { status: 'inactive', enabled: false }
+                            // Only show services that are actually installed
+                            if (!installedPackages[service] && !['ssh', 'sshd'].includes(service)) {
+                                output = `Unit ${service}.service could not be found.`;
+                                break;
+                            }
+                            
+                            // Map service names to package names
+                            const serviceMap = {
+                                'ssh': 'openssh-server',
+                                'sshd': 'openssh-server'
                             };
+                            
+                            const packageName = serviceMap[service] || service;
+                            const serviceInfo = installedPackages[packageName];
+                            
+                            if (!serviceInfo) {
+                                        output = `Unit ${service}.service could not be found.`;
+                                break;
+                                    }
                             
                             switch(action) {
                                 case 'status':
-                                    if (services[service]) {
-                                        const svc = services[service];
-                                        output = `● ${service}.service - ${service} service\n   Loaded: loaded (/lib/systemd/system/${service}.service; ${svc.enabled ? 'enabled' : 'disabled'})\n   Active: ${svc.status} (${svc.status === 'active' ? 'running' : 'dead'}) since ${new Date().toLocaleString()}\n     Docs: man:${service}(8)\n   Main PID: ${svc.status === 'active' ? Math.floor(Math.random() * 9000) + 1000 : 'N/A'}\n    Tasks: ${svc.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}\n   Memory: ${svc.status === 'active' ? Math.floor(Math.random() * 50) + 10 : '0'}M\n   CGroup: /system.slice/${service}.service`;
-                                    } else {
-                                        output = `Unit ${service}.service could not be found.`;
-                                    }
+                                    output = `● ${service}.service - ${service} service\n   Loaded: loaded (/lib/systemd/system/${service}.service; ${serviceInfo.enabled ? 'enabled' : 'disabled'})\n   Active: ${serviceInfo.status} (${serviceInfo.status === 'active' ? 'running' : 'dead'}) since ${new Date().toLocaleString()}\n     Docs: man:${service}(8)\n   Main PID: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 9000) + 1000 : 'N/A'}\n    Tasks: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}\n   Memory: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}M\n   CGroup: /system.slice/${service}.service`;
                                     break;
                                 case 'start':
-                                    if (services[service]) {
-                                        services[service].status = 'active';
+                                    serviceInfo.status = 'active';
                                         output = `Started ${service}.service`;
-                                    } else {
-                                        output = `Failed to start ${service}.service: Unit ${service}.service not found.`;
-                                    }
                                     break;
                                 case 'stop':
-                                    if (services[service]) {
-                                        services[service].status = 'inactive';
+                                    serviceInfo.status = 'inactive';
                                         output = `Stopped ${service}.service`;
-                                    } else {
-                                        output = `Failed to stop ${service}.service: Unit ${service}.service not found.`;
-                                    }
                                     break;
                                 case 'restart':
-                                    if (services[service]) {
                                         output = `Restarted ${service}.service`;
-                                    } else {
-                                        output = `Failed to restart ${service}.service: Unit ${service}.service not found.`;
-                                    }
                                     break;
                                 case 'enable':
-                                    if (services[service]) {
-                                        services[service].enabled = true;
+                                    serviceInfo.enabled = true;
                                         output = `Created symlink /etc/systemd/system/multi-user.target.wants/${service}.service → /lib/systemd/system/${service}.service.`;
-                                    } else {
-                                        output = `Failed to enable ${service}.service: Unit ${service}.service not found.`;
-                                    }
                                     break;
                                 case 'disable':
-                                    if (services[service]) {
-                                        services[service].enabled = false;
+                                    serviceInfo.enabled = false;
                                         output = `Removed /etc/systemd/system/multi-user.target.wants/${service}.service.`;
-                                    } else {
-                                        output = `Failed to disable ${service}.service: Unit ${service}.service not found.`;
-                                    }
                                     break;
                                 default:
                                     output = `systemctl: invalid command '${action}'\nValid commands: status, start, stop, restart, enable, disable`;
@@ -1427,6 +1748,11 @@ ${hostname} login: <span class="cursor">_</span>
                                     } else {
                                         const packages = ['samba', 'isc-dhcp-server', 'bind9', 'openssh-server', 'vsftpd', 'apache2', 'nginx', 'mysql-server', 'mariadb-server'];
                                         if (packages.includes(package)) {
+                                            // Add package to installed packages list
+                                            if (!installedPackages[package]) {
+                                                installedPackages[package] = { status: 'inactive', enabled: false };
+                                            }
+                                            
                                             output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following NEW packages will be installed:\n  ${package}\n0 upgraded, 1 newly installed, 0 to remove and 3 not upgraded.\nNeed to get 2,345 kB of archives.\nAfter this operation, 8,192 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 ${package} amd64 [2,345 kB]\nFetched 2,345 kB in 3s (781 kB/s)\nSelecting previously unselected package ${package}.\n(Reading database ... 123456 files and directories currently installed.)\nPreparing to unpack .../${package}_amd64.deb ...\nUnpacking ${package} ...\nSetting up ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} installed successfully.`;
                                         } else {
                                             output = `E: Unable to locate package ${package}`;
@@ -1437,6 +1763,11 @@ ${hostname} login: <span class="cursor">_</span>
                                     if (!package) {
                                         output = 'apt remove: missing package name';
                                     } else {
+                                        // Remove package from installed packages list
+                                        if (installedPackages[package]) {
+                                            delete installedPackages[package];
+                                        }
+                                        
                                         output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following packages will be REMOVED:\n  ${package}\n0 upgraded, 0 newly installed, 1 to remove and 3 not upgraded.\nAfter this operation, 8,192 kB disk space will be freed.\nRemoving ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} removed successfully.`;
                                     }
                                     break;
