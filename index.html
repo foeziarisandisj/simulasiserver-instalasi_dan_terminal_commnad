@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debian Installation Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .terminal {
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            padding: 20px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .installer-screen {
+            display: none;
+            background: #000080;
+            color: #fff;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .installer-screen.active {
+            display: block;
+        }
+
+        .installer-header {
+            background: #0000ff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 2px solid #fff;
+        }
+
+        .installer-content {
+            background: #000080;
+            padding: 20px;
+            border: 1px solid #fff;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            padding: 5px 10px;
+            margin: 2px 0;
+            cursor: pointer;
+            background: #000080;
+            border: 1px solid transparent;
+        }
+
+        .menu-item:hover, .menu-item.selected {
+            background: #ff0000;
+            border: 1px solid #fff;
+        }
+
+        .input-field {
+            background: #000080;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 5px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button {
+            background: #000080;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 8px 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button:hover {
+            background: #ff0000;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #000080;
+            border: 1px solid #fff;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .login-screen {
+            display: none;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        #loginContent {
+            max-width: 100%;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .login-screen.active {
+            display: block;
+        }
+
+        .cursor {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .typing {
+            border-right: 2px solid #00ff00;
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Boot Screen -->
+    <div id="bootScreen" class="terminal"></div>
+
+    <!-- Language Selection -->
+    <div id="languageScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Debian GNU/Linux installer boot menu</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select a language</h3>
+            <div class="menu-item selected" onclick="selectLanguage('English')">English</div>
+            <div class="menu-item" onclick="selectLanguage('Bahasa Indonesia')">Bahasa Indonesia</div>
+            <div class="menu-item" onclick="selectLanguage('Français')">Français</div>
+            <div class="menu-item" onclick="selectLanguage('Deutsch')">Deutsch</div>
+        </div>
+        <button class="button" onclick="nextStep('hardwareScreen')">Continue</button>
+    </div>
+
+    <!-- Detect Hardware -->
+    <div id="hardwareScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Detecting hardware and loading components</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Please wait while the installer detects your hardware...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="hardwareProgress"></div>
+            </div>
+            <div id="hardwareStatus">Detecting hardware...</div>
+        </div>
+    </div>
+
+    <!-- Country Selection -->
+    <div id="countryScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Select your location</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Country, territory or area:</h3>
+            <div class="menu-item selected" onclick="selectCountry('Indonesia')">Indonesia</div>
+            <div class="menu-item" onclick="selectCountry('United States')">United States</div>
+            <div class="menu-item" onclick="selectCountry('United Kingdom')">United Kingdom</div>
+            <div class="menu-item" onclick="selectCountry('Germany')">Germany</div>
+        </div>
+        <button class="button" onclick="nextStep('keyboardScreen')">Continue</button>
+    </div>
+
+    <!-- Keyboard Configuration -->
+    <div id="keyboardScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the keyboard</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Keyboard layout:</h3>
+            <div class="menu-item selected" onclick="selectKeyboard('American English')">American English</div>
+            <div class="menu-item" onclick="selectKeyboard('Indonesian')">Indonesian</div>
+            <div class="menu-item" onclick="selectKeyboard('German')">German</div>
+        </div>
+        <button class="button" onclick="nextStep('timezoneScreen')">Continue</button>
+    </div>
+
+    <!-- Timezone Configuration -->
+    <div id="timezoneScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the clock</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select your time zone:</h3>
+            <div class="menu-item selected" onclick="selectTimezone('Asia/Jakarta')">Asia/Jakarta</div>
+            <div class="menu-item" onclick="selectTimezone('America/New_York')">America/New_York</div>
+            <div class="menu-item" onclick="selectTimezone('Europe/London')">Europe/London</div>
+            <div class="menu-item" onclick="selectTimezone('Europe/Berlin')">Europe/Berlin</div>
+            <div class="menu-item" onclick="selectTimezone('UTC')">UTC</div>
+        </div>
+        <button class="button" onclick="nextStep('networkScreen')">Continue</button>
+    </div>
+
+    <!-- Network Configuration -->
+    <div id="networkScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the network</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Hostname:</h3>
+            <input type="text" class="input-field" id="hostname" value="debian" placeholder="Enter hostname">
+            <h3>Domain name:</h3>
+            <input type="text" class="input-field" id="domain" placeholder="Enter domain name (optional)">
+        </div>
+        <button class="button" onclick="nextStep('userScreen')">Continue</button>
+    </div>
+
+    <!-- User Setup -->
+    <div id="userScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Set up users and passwords</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Root password:</h3>
+            <input type="password" class="input-field" id="rootPassword" placeholder="Enter root password">
+            <h3>Re-enter password to verify:</h3>
+            <input type="password" class="input-field" id="rootPasswordConfirm" placeholder="Re-enter root password">
+            <h3>Full name for the new user:</h3>
+            <input type="text" class="input-field" id="fullName" placeholder="Enter full name">
+            <h3>Username for your account:</h3>
+            <input type="text" class="input-field" id="username" placeholder="Enter username">
+            <h3>Choose a password for the new user:</h3>
+            <input type="password" class="input-field" id="userPassword" placeholder="Enter user password">
+        </div>
+        <button class="button" onclick="nextStep('diskDetectScreen')">Continue</button>
+    </div>
+
+    <!-- Detect Disks -->
+    <div id="diskDetectScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Detect disks</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Detecting disks and all other hardware...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="diskProgress"></div>
+            </div>
+            <div id="diskStatus">Scanning for disks...</div>
+        </div>
+    </div>
+
+    <!-- Partition Disks -->
+    <div id="partitionScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Partition disks</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Partitioning method:</h3>
+            <div class="menu-item selected" onclick="selectPartition('guided')">Guided - use entire disk</div>
+            <div class="menu-item" onclick="selectPartition('guided-lvm')">Guided - use entire disk and set up LVM</div>
+            <div class="menu-item" onclick="selectPartition('guided-encrypted')">Guided - use entire disk and set up encrypted LVM</div>
+            <div class="menu-item" onclick="selectPartition('manual')">Manual</div>
+        </div>
+        <button class="button" onclick="nextStep('diskSelectScreen')">Continue</button>
+    </div>
+
+    <!-- Select Disk -->
+    <div id="diskSelectScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Select disk to partition</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select the disk to partition:</h3>
+            <div class="menu-item selected">/dev/sda - 20.0 GB Virtual Disk (VBOX HARDDISK)</div>
+            <div class="menu-item">/dev/sdb - 8.0 GB USB Drive (SanDisk Ultra)</div>
+        </div>
+        <button class="button" onclick="nextStep('partitionSchemeScreen')">Continue</button>
+    </div>
+
+    <!-- Partition Scheme -->
+    <div id="partitionSchemeScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Partition scheme</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select partitioning scheme:</h3>
+            <div class="menu-item selected" onclick="selectScheme('all-in-one')">All files in one partition (recommended for new users)</div>
+            <div class="menu-item" onclick="selectScheme('separate-home')">Separate /home partition</div>
+            <div class="menu-item" onclick="selectScheme('separate-home-var-tmp')">Separate /home, /var, and /tmp partitions</div>
+        </div>
+        <button class="button" onclick="nextStep('partitionConfirmScreen')">Continue</button>
+    </div>
+
+    <!-- Confirm Partitioning -->
+    <div id="partitionConfirmScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Write changes to disks?</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Overview of your currently configured partitions and mount points:</h3>
+            <div style="background: #000; color: #fff; padding: 10px; margin: 10px 0; font-family: monospace;">
+/dev/sda1    ext4    /boot     512 MB<br>
+/dev/sda2    ext4    /         19.5 GB<br>
+/dev/sda3    swap    swap      1.0 GB
+            </div>
+            <p><strong>WARNING:</strong> This will destroy all data on the selected disk!</p>
+            <div class="menu-item selected" onclick="confirmPartition('yes')">Yes, write changes to disk</div>
+            <div class="menu-item" onclick="confirmPartition('no')">No, go back</div>
+        </div>
+        <button class="button" onclick="nextStep('installScreen')">Continue</button>
+    </div>
+
+    <!-- Installation Progress -->
+    <div id="installScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Installing the base system</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Installing packages...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="installProgress"></div>
+            </div>
+            <div id="installStatus">Preparing installation...</div>
+        </div>
+    </div>
+
+    <!-- Configure APT -->
+    <div id="aptScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configuring APT</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Configuring the package manager...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="aptProgress"></div>
+            </div>
+            <div id="aptStatus">Setting up package sources...</div>
+        </div>
+    </div>
+
+    <!-- Package Manager -->
+    <div id="packageScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the package manager</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Use a network mirror?</h3>
+            <div class="menu-item selected" onclick="selectMirror('yes')">Yes</div>
+            <div class="menu-item" onclick="selectMirror('no')">No</div>
+            <h3>Debian archive mirror country:</h3>
+            <div class="menu-item selected">Indonesia</div>
+            <div class="menu-item">United States</div>
+            <div class="menu-item">Germany</div>
+            <h3>Debian archive mirror:</h3>
+            <div class="menu-item selected">deb.debian.org</div>
+            <div class="menu-item">mirror.unej.ac.id</div>
+            <div class="menu-item">kartolo.sby.datautama.net.id</div>
+        </div>
+        <button class="button" onclick="nextStep('proxyScreen')">Continue</button>
+    </div>
+
+    <!-- HTTP Proxy -->
+    <div id="proxyScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the package manager</h2>
+        </div>
+        <div class="installer-content">
+            <h3>HTTP proxy information (blank for none):</h3>
+            <input type="text" class="input-field" id="httpProxy" placeholder="http://proxy.example.com:8080/">
+            <p>If you need to use a HTTP proxy to access the outside world, enter the proxy information here.</p>
+        </div>
+        <button class="button" onclick="nextStep('popularityScreen')">Continue</button>
+    </div>
+
+    <!-- Popularity Contest -->
+    <div id="popularityScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configuring popularity-contest</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Participate in the package usage survey?</h3>
+            <p>The system may anonymously supply the distribution developers with statistics about the most used packages on this system.</p>
+            <div class="menu-item selected" onclick="selectPopularity('yes')">Yes</div>
+            <div class="menu-item" onclick="selectPopularity('no')">No</div>
+        </div>
+        <button class="button" onclick="nextStep('softwareScreen')">Continue</button>
+    </div>
+
+    <!-- Software Selection -->
+    <div id="softwareScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Software selection</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Choose software to install:</h3>
+            <div class="menu-item" onclick="toggleSoftware(this)">[ ] Debian desktop environment</div>
+            <div class="menu-item" onclick="toggleSoftware(this)">[ ] GNOME</div>
+            <div class="menu-item selected" onclick="toggleSoftware(this)">[*] SSH server</div>
+            <div class="menu-item selected" onclick="toggleSoftware(this)">[*] standard system utilities</div>
+        </div>
+        <button class="button" onclick="nextStep('grubScreen')">Continue</button>
+    </div>
+
+    <!-- GRUB Installation -->
+    <div id="grubScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Install the GRUB boot loader</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Install the GRUB boot loader to your primary drive?</h3>
+            <div class="menu-item selected" onclick="selectGrub('yes')">Yes</div>
+            <div class="menu-item" onclick="selectGrub('no')">No</div>
+            <h3>Device for boot loader installation:</h3>
+            <div class="menu-item selected">/dev/sda</div>
+        </div>
+        <button class="button" onclick="nextStep('finishScreen')">Continue</button>
+    </div>
+
+    <!-- Installation Complete -->
+    <div id="finishScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Finish the installation</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Installation complete</h3>
+            <p>The system is going to reboot.</p>
+            <p>Please remove the installation medium and press Continue to reboot.</p>
+        </div>
+        <button class="button" onclick="rebootSystem()">Continue</button>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div id="loginContent"></div>
+    </div>
+
+    <script>
+        let currentStep = 'boot';
+        let installationData = {
+            language: 'English',
+            country: 'Indonesia',
+            keyboard: 'American English',
+            hostname: 'debian',
+            domain: '',
+            rootPassword: '',
+            fullName: '',
+            username: '',
+            userPassword: ''
+        };
+
+        // Boot sequence
+        function startBoot() {
+            const bootScreen = document.getElementById('bootScreen');
+            const bootMessages = [
+                'BIOS Version 2.15.1236',
+                'Memory Test: 2048MB OK',
+                'Detecting Primary Master... IDE Hard Disk',
+                'Detecting Primary Slave... None',
+                'Detecting Secondary Master... ATAPI CD-ROM',
+                'Detecting Secondary Slave... None',
+                '',
+                'Booting from CD-ROM...',
+                '',
+                'Loading Debian GNU/Linux installer...',
+                'Loading initial ramdisk...',
+                '',
+                'Starting kernel...',
+                '',
+                '[    0.000000] Linux version 5.10.0-21-amd64',
+                '[    0.000000] Command line: BOOT_IMAGE=/install.amd/vmlinuz',
+                '[    0.123456] Memory: 2048MB available',
+                '[    0.234567] CPU: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz',
+                '[    0.345678] PCI: Found 12 devices',
+                '[    0.456789] USB: 3 ports detected',
+                '[    0.567890] Network: eth0 detected',
+                '[    1.234567] Starting Debian installer...',
+                '',
+                'Welcome to Debian GNU/Linux installer!',
+                '',
+                'Loading installer components...'
+            ];
+
+            let i = 0;
+            function typeMessage() {
+                if (i < bootMessages.length) {
+                    bootScreen.innerHTML += bootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(typeMessage, Math.random() * 500 + 200);
+                } else {
+                    setTimeout(() => {
+                        bootScreen.style.display = 'none';
+                        document.getElementById('languageScreen').classList.add('active');
+                    }, 1000);
+                }
+            }
+            typeMessage();
+        }
+
+        function selectLanguage(lang) {
+            installationData.language = lang;
+            document.querySelectorAll('#languageScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectCountry(country) {
+            installationData.country = country;
+            document.querySelectorAll('#countryScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectKeyboard(keyboard) {
+            installationData.keyboard = keyboard;
+            document.querySelectorAll('#keyboardScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectTimezone(timezone) {
+            installationData.timezone = timezone;
+            document.querySelectorAll('#timezoneScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectScheme(scheme) {
+            document.querySelectorAll('#partitionSchemeScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function confirmPartition(choice) {
+            document.querySelectorAll('#partitionConfirmScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectMirror(choice) {
+            document.querySelectorAll('#packageScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectPopularity(choice) {
+            document.querySelectorAll('#popularityScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectPartition(method) {
+            document.querySelectorAll('#partitionScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectGrub(option) {
+            document.querySelectorAll('#grubScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function toggleSoftware(element) {
+            if (element.textContent.includes('[*]')) {
+                element.textContent = element.textContent.replace('[*]', '[ ]');
+                element.classList.remove('selected');
+            } else {
+                element.textContent = element.textContent.replace('[ ]', '[*]');
+                element.classList.add('selected');
+            }
+        }
+
+        function nextStep(stepId) {
+            // Save user data
+            if (currentStep === 'networkScreen') {
+                installationData.hostname = document.getElementById('hostname').value || 'debian';
+                installationData.domain = document.getElementById('domain').value;
+            } else if (currentStep === 'userScreen') {
+                const rootPass = document.getElementById('rootPassword').value;
+                const rootPassConfirm = document.getElementById('rootPasswordConfirm').value;
+                
+                if (!rootPass) {
+                    alert('Root password is required!');
+                    return;
+                }
+                if (rootPass !== rootPassConfirm) {
+                    alert('Root passwords do not match!');
+                    return;
+                }
+                
+                installationData.rootPassword = rootPass;
+                installationData.fullName = document.getElementById('fullName').value;
+                installationData.username = document.getElementById('username').value;
+                installationData.userPassword = document.getElementById('userPassword').value;
+            }
+
+            // Hide current screen
+            document.querySelectorAll('.installer-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show next screen with special handling for progress screens
+            if (stepId === 'hardwareScreen') {
+                startHardwareDetection();
+            } else if (stepId === 'diskDetectScreen') {
+                startDiskDetection();
+            } else if (stepId === 'aptScreen') {
+                startAptConfiguration();
+            } else if (stepId === 'installScreen') {
+                startInstallation();
+            } else {
+                document.getElementById(stepId).classList.add('active');
+            }
+            currentStep = stepId;
+        }
+
+        function startHardwareDetection() {
+            document.getElementById('hardwareScreen').classList.add('active');
+            const progressBar = document.getElementById('hardwareProgress');
+            const statusDiv = document.getElementById('hardwareStatus');
+            
+            const hardwareSteps = [
+                'Detecting hardware...',
+                'Loading network drivers...',
+                'Loading storage drivers...',
+                'Loading input device drivers...',
+                'Configuring hardware...'
+            ];
+
+            let step = 0;
+            function updateHardwareProgress() {
+                if (step < hardwareSteps.length) {
+                    statusDiv.textContent = hardwareSteps[step];
+                    progressBar.style.width = ((step + 1) / hardwareSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateHardwareProgress, Math.random() * 1500 + 800);
+                } else {
+                    setTimeout(() => nextStep('countryScreen'), 1000);
+                }
+            }
+            updateHardwareProgress();
+        }
+
+        function startDiskDetection() {
+            document.getElementById('diskDetectScreen').classList.add('active');
+            const progressBar = document.getElementById('diskProgress');
+            const statusDiv = document.getElementById('diskStatus');
+            
+            const diskSteps = [
+                'Scanning for disks...',
+                'Loading SCSI drivers...',
+                'Loading SATA drivers...',
+                'Detecting partitions...',
+                'Configuring disk access...'
+            ];
+
+            let step = 0;
+            function updateDiskProgress() {
+                if (step < diskSteps.length) {
+                    statusDiv.textContent = diskSteps[step];
+                    progressBar.style.width = ((step + 1) / diskSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateDiskProgress, Math.random() * 1200 + 600);
+                } else {
+                    setTimeout(() => nextStep('partitionScreen'), 1000);
+                }
+            }
+            updateDiskProgress();
+        }
+
+        function startAptConfiguration() {
+            document.getElementById('aptScreen').classList.add('active');
+            const progressBar = document.getElementById('aptProgress');
+            const statusDiv = document.getElementById('aptStatus');
+            
+            const aptSteps = [
+                'Setting up package sources...',
+                'Downloading package lists...',
+                'Validating package signatures...',
+                'Configuring APT...',
+                'Updating package cache...'
+            ];
+
+            let step = 0;
+            function updateAptProgress() {
+                if (step < aptSteps.length) {
+                    statusDiv.textContent = aptSteps[step];
+                    progressBar.style.width = ((step + 1) / aptSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateAptProgress, Math.random() * 2000 + 1000);
+                } else {
+                    setTimeout(() => nextStep('packageScreen'), 1000);
+                }
+            }
+            updateAptProgress();
+        }
+
+        function startInstallation() {
+            document.getElementById('installScreen').classList.add('active');
+            const progressBar = document.getElementById('installProgress');
+            const statusDiv = document.getElementById('installStatus');
+            
+            const installSteps = [
+                'Preparing installation...',
+                'Creating partitions...',
+                'Formatting filesystems...',
+                'Installing base system...',
+                'Installing kernel...',
+                'Configuring system...',
+                'Installing essential packages...',
+                'Setting up users...',
+                'Finalizing base installation...'
+            ];
+
+            let step = 0;
+            function updateProgress() {
+                if (step < installSteps.length) {
+                    statusDiv.textContent = installSteps[step];
+                    progressBar.style.width = ((step + 1) / installSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateProgress, Math.random() * 2500 + 1500);
+                } else {
+                    setTimeout(() => nextStep('aptScreen'), 1000);
+                }
+            }
+            updateProgress();
+        }
+
+        function rebootSystem() {
+            document.querySelectorAll('.installer-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show reboot messages
+            const bootScreen = document.getElementById('bootScreen');
+            bootScreen.style.display = 'block';
+            bootScreen.innerHTML = '';
+            
+            const rebootMessages = [
+                'System is rebooting...',
+                '',
+                'GRUB loading...',
+                '',
+                'GNU GRUB version 2.06',
+                '',
+                '   Debian GNU/Linux',
+                '   Advanced options for Debian GNU/Linux',
+                '',
+                'Use the ↑ and ↓ keys to select which entry is highlighted.',
+                'Press enter to boot the selected OS, `e` to edit the commands',
+                'before booting or `c` for a command-line.',
+                '',
+                'The highlighted entry will be executed automatically in 5s.',
+                '',
+                'Loading Linux 5.10.0-21-amd64 ...',
+                'Loading initial ramdisk ...',
+                '',
+                '[    0.000000] Linux version 5.10.0-21-amd64',
+                '[    0.123456] Memory: 2048MB available',
+                '[    1.234567] Starting system...',
+                '[    2.345678] Mounting filesystems...',
+                '[    3.456789] Starting network...',
+                '[    4.567890] Starting SSH daemon...',
+                '[    5.678901] System ready.',
+                ''
+            ];
+
+            let i = 0;
+            function showRebootMessage() {
+                if (i < rebootMessages.length) {
+                    bootScreen.innerHTML += rebootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(showRebootMessage, Math.random() * 300 + 100);
+                } else {
+                    setTimeout(showLoginScreen, 1000);
+                }
+            }
+            showRebootMessage();
+        }
+
+        function showLoginScreen() {
+            document.getElementById('bootScreen').style.display = 'none';
+            const loginScreen = document.getElementById('loginScreen');
+            const loginContent = document.getElementById('loginContent');
+            
+            loginScreen.classList.add('active');
+            
+            const hostname = installationData.hostname || 'debian';
+            loginContent.innerHTML = `
+Debian GNU/Linux 11 ${hostname} tty1
+
+${hostname} login: <span class="cursor">_</span>
+            `;
+            
+            // Handle login input
+            let loginStep = 'username';
+            let inputBuffer = '';
+            
+            document.addEventListener('keydown', function(e) {
+                if (!loginScreen.classList.contains('active')) return;
+                
+                if (e.key === 'Enter') {
+                    if (loginStep === 'username') {
+                        if (inputBuffer === 'root') {
+                            loginContent.innerHTML += inputBuffer + '\nPassword: ';
+                            loginStep = 'password';
+                            inputBuffer = '';
+                        } else {
+                            loginContent.innerHTML += inputBuffer + '\nLogin incorrect\n\n' + hostname + ' login: ';
+                            inputBuffer = '';
+                        }
+                    } else if (loginStep === 'password') {
+                        if (inputBuffer === installationData.rootPassword) {
+                            loginContent.innerHTML += '\nLast login: ' + new Date().toLocaleString() + ' on tty1\n';
+                            loginContent.innerHTML += 'Linux ' + hostname + ' 5.10.0-21-amd64 #1 SMP Debian 5.10.162-1 (2023-01-21) x86_64\n\n';
+                            loginContent.innerHTML += 'The programs included with the Debian GNU/Linux system are free software;\n';
+                            loginContent.innerHTML += 'the exact distribution terms for each program are described in the\n';
+                            loginContent.innerHTML += 'individual files in /usr/share/doc/*/copyright.\n\n';
+                            loginContent.innerHTML += 'Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent\n';
+                            loginContent.innerHTML += 'permitted by applicable law.\n';
+                            loginContent.innerHTML += 'root@' + hostname + ':~# <span class="cursor">_</span>';
+                            loginStep = 'shell';
+                            inputBuffer = '';
+                        } else {
+                            loginContent.innerHTML += '\nLogin incorrect\n\n' + hostname + ' login: ';
+                            loginStep = 'username';
+                            inputBuffer = '';
+                        }
+                    } else if (loginStep === 'shell') {
+                        executeCommand(inputBuffer);
+                        inputBuffer = '';
+                    }
+                } else if (e.key === 'Backspace') {
+                    if (inputBuffer.length > 0) {
+                        inputBuffer = inputBuffer.slice(0, -1);
+                        updateLoginDisplay();
+                    }
+                } else if (e.key.length === 1) {
+                    inputBuffer += e.key;
+                    updateLoginDisplay();
+                }
+                
+                e.preventDefault();
+            });
+            
+            function updateLoginDisplay() {
+                const lines = loginContent.innerHTML.split('\n');
+                const lastLine = lines[lines.length - 1];
+                
+                if (loginStep === 'username') {
+                    lines[lines.length - 1] = hostname + ' login: ' + inputBuffer + '<span class="cursor">_</span>';
+                } else if (loginStep === 'password') {
+                    lines[lines.length - 1] = 'Password: ' + '*'.repeat(inputBuffer.length) + '<span class="cursor">_</span>';
+                } else if (loginStep === 'shell') {
+                    const currentPrompt = getCurrentPrompt();
+                    lines[lines.length - 1] = currentPrompt + inputBuffer + '<span class="cursor">_</span>';
+                }
+                
+                loginContent.innerHTML = lines.join('\n');
+            }
+            
+            // Virtual filesystem
+            let currentDirectory = '/root';
+            let filesystem = {
+                '/': {
+                    type: 'directory',
+                    contents: {
+                        'root': {
+                            type: 'directory',
+                            contents: {
+                                'Desktop': { type: 'directory', contents: {} },
+                                'Documents': { type: 'directory', contents: {} },
+                                'Downloads': { type: 'directory', contents: {} },
+                                'Music': { type: 'directory', contents: {} },
+                                'Pictures': { type: 'directory', contents: {} },
+                                'Videos': { type: 'directory', contents: {} }
+                            }
+                        },
+                        'home': { type: 'directory', contents: {} },
+                        'etc': { type: 'directory', contents: {} },
+                        'var': { type: 'directory', contents: {} },
+                        'usr': { type: 'directory', contents: {} },
+                        'tmp': { type: 'directory', contents: {} }
+                    }
+                }
+            };
+
+            function getDirectoryContents(path) {
+                const parts = path.split('/').filter(p => p);
+                let current = filesystem['/'];
+                
+                for (const part of parts) {
+                    if (current.contents && current.contents[part]) {
+                        current = current.contents[part];
+                    } else {
+                        return null;
+                    }
+                }
+                return current;
+            }
+
+            function createDirectory(path, name) {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory') {
+                    if (!dir.contents[name]) {
+                        dir.contents[name] = { type: 'directory', contents: {} };
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function removeDirectory(path, name) {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory' && dir.contents[name]) {
+                    delete dir.contents[name];
+                    return true;
+                }
+                return false;
+            }
+
+            function renameItem(path, oldName, newName) {
+                const dir = getDirectoryContents(path);
+                if (dir && dir.type === 'directory' && dir.contents[oldName] && !dir.contents[newName]) {
+                    dir.contents[newName] = dir.contents[oldName];
+                    delete dir.contents[oldName];
+                    return true;
+                }
+                return false;
+            }
+
+            function executeCommand(cmd) {
+                const hostname = installationData.hostname || 'debian';
+                let output = '';
+                const args = cmd.trim().split(' ');
+                const command = args[0];
+                
+                // Remove the cursor and add newline for command execution
+                const lines = loginContent.innerHTML.split('\n');
+                const lastLine = lines[lines.length - 1];
+                const cleanLastLine = lastLine.replace('<span class="cursor">_</span>', '');
+                lines[lines.length - 1] = cleanLastLine;
+                loginContent.innerHTML = lines.join('\n') + '\n';
+                
+                switch(command) {
+                    case 'ls':
+                        const lsDir = getDirectoryContents(currentDirectory);
+                        if (lsDir && lsDir.contents) {
+                            if (args.includes('-la') || args.includes('-l')) {
+                                output = 'total ' + Object.keys(lsDir.contents).length * 4 + '\n';
+                                output += 'drwx------  2 root root 4096 Jan 21 10:30 .\n';
+                                output += 'drwxr-xr-x  3 root root 4096 Jan 21 10:25 ..\n';
+                                for (const [name, item] of Object.entries(lsDir.contents)) {
+                                    const type = item.type === 'directory' ? 'd' : '-';
+                                    output += `${type}rwx------  2 root root 4096 Jan 21 10:30 ${name}\n`;
+                                }
+                            } else {
+                                const items = Object.keys(lsDir.contents);
+                                output = items.length > 0 ? items.join('  ') : '';
+                            }
+                        } else {
+                            output = 'ls: cannot access directory';
+                        }
+                        break;
+                        
+                    case 'pwd':
+                        output = currentDirectory;
+                        break;
+                        
+                    case 'cd':
+                        if (args.length === 1) {
+                            currentDirectory = '/root';
+                        } else {
+                            let targetPath = args[1];
+                            if (targetPath === '..') {
+                                const parts = currentDirectory.split('/').filter(p => p);
+                                if (parts.length > 1) {
+                                    parts.pop();
+                                    currentDirectory = '/' + parts.join('/');
+                                } else {
+                                    currentDirectory = '/';
+                                }
+                            } else if (targetPath === '.') {
+                                // Stay in current directory
+                            } else if (targetPath.startsWith('/')) {
+                                // Absolute path
+                                const targetDir = getDirectoryContents(targetPath);
+                                if (targetDir && targetDir.type === 'directory') {
+                                    currentDirectory = targetPath;
+                                } else {
+                                    output = `cd: ${targetPath}: No such file or directory`;
+                                }
+                            } else {
+                                // Relative path
+                                const newPath = currentDirectory === '/' ? '/' + targetPath : currentDirectory + '/' + targetPath;
+                                const targetDir = getDirectoryContents(newPath);
+                                if (targetDir && targetDir.type === 'directory') {
+                                    currentDirectory = newPath;
+                                } else {
+                                    output = `cd: ${targetPath}: No such file or directory`;
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'mkdir':
+                        if (args.length < 2) {
+                            output = 'mkdir: missing operand\nTry "mkdir --help" for more information.';
+                        } else {
+                            const dirName = args[1];
+                            if (createDirectory(currentDirectory, dirName)) {
+                                // Success, no output
+                            } else {
+                                output = `mkdir: cannot create directory '${dirName}': File exists`;
+                            }
+                        }
+                        break;
+                        
+                    case 'rmdir':
+                        if (args.length < 2) {
+                            output = 'rmdir: missing operand\nTry "rmdir --help" for more information.';
+                        } else {
+                            const dirName = args[1];
+                            const dir = getDirectoryContents(currentDirectory);
+                            if (dir && dir.contents[dirName] && dir.contents[dirName].type === 'directory') {
+                                if (Object.keys(dir.contents[dirName].contents).length === 0) {
+                                    removeDirectory(currentDirectory, dirName);
+                                } else {
+                                    output = `rmdir: failed to remove '${dirName}': Directory not empty`;
+                                }
+                            } else {
+                                output = `rmdir: failed to remove '${dirName}': No such file or directory`;
+                            }
+                        }
+                        break;
+                        
+                    case 'rm':
+                        if (args.length < 2) {
+                            output = 'rm: missing operand\nTry "rm --help" for more information.';
+                        } else if (args.includes('-rf') || args.includes('-r')) {
+                            const dirName = args[args.length - 1];
+                            if (removeDirectory(currentDirectory, dirName)) {
+                                // Success, no output
+                            } else {
+                                output = `rm: cannot remove '${dirName}': No such file or directory`;
+                            }
+                        } else {
+                            output = 'rm: cannot remove directory (use -r for recursive removal)';
+                        }
+                        break;
+                        
+                    case 'mv':
+                        if (args.length < 3) {
+                            output = 'mv: missing operand\nTry "mv --help" for more information.';
+                        } else {
+                            const oldName = args[1];
+                            const newName = args[2];
+                            if (renameItem(currentDirectory, oldName, newName)) {
+                                // Success, no output
+                            } else {
+                                output = `mv: cannot move '${oldName}' to '${newName}': No such file or directory`;
+                            }
+                        }
+                        break;
+                        
+                    case 'whoami':
+                        output = 'root';
+                        break;
+                        
+                    case 'id':
+                        output = 'uid=0(root) gid=0(root) groups=0(root)';
+                        break;
+                        
+                    case 'uname':
+                        if (args.includes('-a')) {
+                            output = 'Linux ' + hostname + ' 5.10.0-21-amd64 #1 SMP Debian 5.10.162-1 (2023-01-21) x86_64 GNU/Linux';
+                        } else if (args.includes('-r')) {
+                            output = '5.10.0-21-amd64';
+                        } else {
+                            output = 'Linux';
+                        }
+                        break;
+                        
+                    case 'date':
+                        output = new Date().toString();
+                        break;
+                        
+                    case 'uptime':
+                        output = ' 10:35:42 up 5 min,  1 user,  load average: 0.08, 0.12, 0.05';
+                        break;
+                        
+                    case 'df':
+                        if (args.includes('-h')) {
+                            output = 'Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda2        18G  1.2G   16G   7% /\n/dev/sda1       976M   77M  833M   9% /boot\ntmpfs           1.0G     0  1.0G   0% /dev/shm\ntmpfs           5.0M     0  5.0M   0% /run/lock';
+                        } else {
+                            output = 'Filesystem     1K-blocks    Used Available Use% Mounted on\n/dev/sda2       18874368 1258496  16651392   7% /\n/dev/sda1         999320   78848    851840   9% /boot';
+                        }
+                        break;
+                        
+                    case 'free':
+                        if (args.includes('-h')) {
+                            output = '               total        used        free      shared  buff/cache   available\nMem:           2.0Gi       156Mi       1.7Gi       8.0Mi       112Mi       1.7Gi\nSwap:          975Mi          0B       975Mi';
+                        } else {
+                            output = '              total        used        free      shared  buff/cache   available\nMem:        2097152      159744     1781760        8192      114688     1781760\nSwap:        998396           0      998396';
+                        }
+                        break;
+                        
+                    case 'ps':
+                        if (args.includes('aux')) {
+                            output = 'USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nroot           1  0.0  0.1  22548  2048 ?        Ss   10:30   0:01 /sbin/init\nroot         123  0.0  0.0  12345  1024 ?        S    10:31   0:00 [kthreadd]\nroot         456  0.0  0.1  15678  2048 tty1     Ss+  10:32   0:00 /sbin/getty\nroot         789  0.0  0.2  18901  4096 pts/0    Ss   10:35   0:00 -bash';
+                        } else {
+                            output = '    PID TTY          TIME CMD\n    789 pts/0    00:00:00 bash';
+                        }
+                        break;
+                        
+                    case 'cat':
+                        if (args[1] === '/etc/debian_version') {
+                            output = '11.6';
+                        } else if (args[1]) {
+                            output = `cat: ${args[1]}: No such file or directory`;
+                        } else {
+                            output = 'cat: missing operand\nTry "cat --help" for more information.';
+                        }
+                        break;
+                        
+                    case 'lscpu':
+                        output = 'Architecture:                    x86_64\nCPU op-mode(s):                  32-bit, 64-bit\nByte Order:                      Little Endian\nCPU(s):                          4\nModel name:                      Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz\nCPU MHz:                         1600.000\nCache L1d:                       128 KiB\nCache L1i:                       128 KiB\nCache L2:                        1 MiB\nCache L3:                        6 MiB';
+                        break;
+                        
+                    case 'tree':
+                        function buildTree(dir, prefix = '', isLast = true) {
+                            let result = '';
+                            const items = Object.entries(dir.contents || {});
+                            items.forEach(([name, item], index) => {
+                                const isLastItem = index === items.length - 1;
+                                const connector = isLastItem ? '└── ' : '├── ';
+                                result += prefix + connector + name + '\n';
+                                if (item.type === 'directory' && Object.keys(item.contents).length > 0) {
+                                    const newPrefix = prefix + (isLastItem ? '    ' : '│   ');
+                                    result += buildTree(item, newPrefix, isLastItem);
+                                }
+                            });
+                            return result;
+                        }
+                        const currentDir = getDirectoryContents(currentDirectory);
+                        if (currentDir) {
+                            output = '.\n' + buildTree(currentDir);
+                        }
+                        break;
+                        
+                    case 'touch':
+                        if (args.length < 2) {
+                            output = 'touch: missing operand\nTry "touch --help" for more information.';
+                        } else {
+                            const fileName = args[1];
+                            const dir = getDirectoryContents(currentDirectory);
+                            if (dir && dir.type === 'directory') {
+                                dir.contents[fileName] = { type: 'file', content: '', size: 0 };
+                                // Success, no output
+                            } else {
+                                output = `touch: cannot create '${fileName}': Permission denied`;
+                            }
+                        }
+                        break;
+                        
+                    case 'nano':
+                        if (args.length < 2) {
+                            output = 'nano: missing operand\nTry "nano --help" for more information.';
+                        } else {
+                            const fileName = args[1];
+                            output = `GNU nano 5.4    ${fileName}\n\n[ File created or opened ]\n\n^X Exit  ^O Write Out  ^R Read File  ^Y Prev Page  ^K Cut Text  ^C Cur Pos\n^V Next Page  ^U Paste Text  ^T To Spell  ^W Where Is  ^G Get Help\n\n(Simulated nano editor - file operations not fully implemented)`;
+                        }
+                        break;
+                        
+                    case 'chmod':
+                        if (args.length < 3) {
+                            output = 'chmod: missing operand\nUsage: chmod MODE FILE';
+                        } else {
+                            const mode = args[1];
+                            const fileName = args[2];
+                            const dir = getDirectoryContents(currentDirectory);
+                            if (dir && dir.contents && dir.contents[fileName]) {
+                                dir.contents[fileName].permissions = mode;
+                                // Success, no output
+                            } else {
+                                output = `chmod: cannot access '${fileName}': No such file or directory`;
+                            }
+                        }
+                        break;
+                        
+                    case 'chown':
+                        if (args.length < 3) {
+                            output = 'chown: missing operand\nUsage: chown USER FILE';
+                        } else {
+                            const user = args[1];
+                            const fileName = args[2];
+                            const dir = getDirectoryContents(currentDirectory);
+                            if (dir && dir.contents && dir.contents[fileName]) {
+                                dir.contents[fileName].owner = user;
+                                // Success, no output
+                            } else {
+                                output = `chown: cannot access '${fileName}': No such file or directory`;
+                            }
+                        }
+                        break;
+                        
+                    case 'clear':
+                        const currentPrompt = getCurrentPrompt();
+                        loginContent.innerHTML = currentPrompt + '<span class="cursor">_</span>';
+                        loginContent.scrollTop = loginContent.scrollHeight;
+                        return;
+                        
+                    case 'adduser':
+                        if (args.length < 2) {
+                            output = 'adduser: missing operand\nUsage: adduser USERNAME';
+                        } else {
+                            const username = args[1];
+                            output = `Adding user \`${username}' ...\nAdding new group \`${username}' (1001) ...\nAdding new user \`${username}' (1001) with group \`${username}' ...\nCreating home directory \`/home/${username}' ...\nCopying files from \`/etc/skel' ...\nNew password: (password input simulated)\nRetype new password: (password input simulated)\nChanging the user information for ${username}\nEnter the new value, or press ENTER for the default\n\tFull Name []: \n\tRoom Number []: \n\tWork Phone []: \n\tHome Phone []: \n\tOther []: \nIs the information correct? [Y/n] Y\nUser ${username} added successfully.`;
+                        }
+                        break;
+                        
+                    case 'deluser':
+                        if (args.length < 2) {
+                            output = 'deluser: missing operand\nUsage: deluser USERNAME';
+                        } else {
+                            const username = args[1];
+                            if (username === 'root') {
+                                output = 'deluser: Cannot remove root user';
+                            } else {
+                                output = `Removing user \`${username}' ...\nWarning: group \`${username}' has no more members.\nDone.`;
+                            }
+                        }
+                        break;
+                        
+                    case 'usermod':
+                        if (args.length < 2) {
+                            output = 'usermod: missing operand\nUsage: usermod [options] USERNAME';
+                        } else {
+                            const username = args[args.length - 1];
+                            output = `User ${username} modified successfully.`;
+                        }
+                        break;
+                        
+                    case 'passwd':
+                        if (args.length === 1) {
+                            output = 'Changing password for root.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully';
+                            // Update the stored root password for simulation
+                            installationData.rootPassword = 'newpassword';
+                        } else {
+                            const username = args[1];
+                            output = `Changing password for ${username}.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully`;
+                        }
+                        break;
+                        
+                    case 'su':
+                        if (args.length < 2) {
+                            output = 'su: missing operand\nUsage: su USERNAME';
+                        } else {
+                            const username = args[1];
+                            output = `Password: (password input simulated)\nSwitched to user ${username} (simulated)`;
+                        }
+                        break;
+                        
+                    case 'groups':
+                        const username = args.length > 1 ? args[1] : 'root';
+                        if (username === 'root') {
+                            output = 'root : root';
+                        } else {
+                            output = `${username} : ${username} sudo`;
+                        }
+                        break;
+                        
+                    case 'exit':
+                        loginContent.innerHTML += 'logout\n\n' + hostname + ' login: <span class="cursor">_</span>';
+                        loginStep = 'username';
+                        loginContent.scrollTop = loginContent.scrollHeight;
+                        return;
+                        
+                    case 'help':
+                        output = 'Available commands:\n\nFile/Directory Management:\n  ls, ls -la     - list directory contents\n  cd <dir>       - change directory\n  pwd            - print working directory\n  mkdir <name>   - create directory\n  rmdir <name>   - remove empty directory\n  rm -rf <name>  - remove directory recursively\n  mv <old> <new> - rename/move file or directory\n  tree           - display directory tree\n  touch <file>   - create empty file\n  nano <file>    - edit file with nano editor\n  chmod <perm> <file> - change file permissions\n  chown <user> <file> - change file ownership\n\nUser Management:\n  adduser <name> - add new user\n  deluser <name> - delete user\n  usermod <opts> <user> - modify user account\n  passwd [user]  - change password (current user or specified)\n  su <user>      - switch user\n  groups [user]  - show user groups\n\nSystem Administration:\n  passwd         - change root password\n  hostname <name> - change system hostname\n  systemctl status <service> - check service status\n  systemctl start <service>  - start service\n  systemctl stop <service>   - stop service\n  systemctl enable <service> - enable service at boot\n  systemctl disable <service> - disable service at boot\n  systemctl restart <service> - restart service\n\nPackage Management:\n  apt update     - update package lists\n  apt install <pkg> - install package\n  apt remove <pkg>  - remove package\n  apt search <pkg>  - search for package\n  dpkg -l        - list installed packages\n\nNetwork Services:\n  Install: samba, isc-dhcp-server, bind9, openssh-server, vsftpd\n  Configure: /etc/samba/smb.conf, /etc/dhcp/dhcpd.conf, /etc/bind/\n\nSystem Information:\n  whoami, id, uname -a, uname -r, date, uptime\n  df -h, free -h, ps aux, lscpu, cat /etc/debian_version\n  netstat -tulpn - show network connections\n  ss -tulpn      - show socket statistics\n\nOther:\n  clear          - clear terminal screen\n  exit           - logout from current session\n  help           - show this help message';
+                        break;
+                        
+                    case '':
+                        break;
+                        
+                    case 'hostname':
+                        if (args.length === 1) {
+                            output = installationData.hostname || 'debian';
+                        } else {
+                            const newHostname = args[1];
+                            installationData.hostname = newHostname;
+                            output = `Hostname changed to: ${newHostname}`;
+                        }
+                        break;
+                        
+                    case 'systemctl':
+                        if (args.length < 2) {
+                            output = 'systemctl: missing operand\nUsage: systemctl COMMAND [SERVICE]';
+                        } else {
+                            const action = args[1];
+                            const service = args[2] || '';
+                            
+                            // Simulate service states
+                            const services = {
+                                'ssh': { status: 'active', enabled: true },
+                                'sshd': { status: 'active', enabled: true },
+                                'openssh-server': { status: 'active', enabled: true },
+                                'samba': { status: 'inactive', enabled: false },
+                                'smbd': { status: 'inactive', enabled: false },
+                                'nmbd': { status: 'inactive', enabled: false },
+                                'isc-dhcp-server': { status: 'inactive', enabled: false },
+                                'dhcpd': { status: 'inactive', enabled: false },
+                                'bind9': { status: 'inactive', enabled: false },
+                                'named': { status: 'inactive', enabled: false },
+                                'vsftpd': { status: 'inactive', enabled: false },
+                                'apache2': { status: 'inactive', enabled: false },
+                                'nginx': { status: 'inactive', enabled: false },
+                                'mysql': { status: 'inactive', enabled: false },
+                                'mariadb': { status: 'inactive', enabled: false }
+                            };
+                            
+                            switch(action) {
+                                case 'status':
+                                    if (services[service]) {
+                                        const svc = services[service];
+                                        output = `● ${service}.service - ${service} service\n   Loaded: loaded (/lib/systemd/system/${service}.service; ${svc.enabled ? 'enabled' : 'disabled'})\n   Active: ${svc.status} (${svc.status === 'active' ? 'running' : 'dead'}) since ${new Date().toLocaleString()}\n     Docs: man:${service}(8)\n   Main PID: ${svc.status === 'active' ? Math.floor(Math.random() * 9000) + 1000 : 'N/A'}\n    Tasks: ${svc.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}\n   Memory: ${svc.status === 'active' ? Math.floor(Math.random() * 50) + 10 : '0'}M\n   CGroup: /system.slice/${service}.service`;
+                                    } else {
+                                        output = `Unit ${service}.service could not be found.`;
+                                    }
+                                    break;
+                                case 'start':
+                                    if (services[service]) {
+                                        services[service].status = 'active';
+                                        output = `Started ${service}.service`;
+                                    } else {
+                                        output = `Failed to start ${service}.service: Unit ${service}.service not found.`;
+                                    }
+                                    break;
+                                case 'stop':
+                                    if (services[service]) {
+                                        services[service].status = 'inactive';
+                                        output = `Stopped ${service}.service`;
+                                    } else {
+                                        output = `Failed to stop ${service}.service: Unit ${service}.service not found.`;
+                                    }
+                                    break;
+                                case 'restart':
+                                    if (services[service]) {
+                                        output = `Restarted ${service}.service`;
+                                    } else {
+                                        output = `Failed to restart ${service}.service: Unit ${service}.service not found.`;
+                                    }
+                                    break;
+                                case 'enable':
+                                    if (services[service]) {
+                                        services[service].enabled = true;
+                                        output = `Created symlink /etc/systemd/system/multi-user.target.wants/${service}.service → /lib/systemd/system/${service}.service.`;
+                                    } else {
+                                        output = `Failed to enable ${service}.service: Unit ${service}.service not found.`;
+                                    }
+                                    break;
+                                case 'disable':
+                                    if (services[service]) {
+                                        services[service].enabled = false;
+                                        output = `Removed /etc/systemd/system/multi-user.target.wants/${service}.service.`;
+                                    } else {
+                                        output = `Failed to disable ${service}.service: Unit ${service}.service not found.`;
+                                    }
+                                    break;
+                                default:
+                                    output = `systemctl: invalid command '${action}'\nValid commands: status, start, stop, restart, enable, disable`;
+                            }
+                        }
+                        break;
+                        
+                    case 'apt':
+                        if (args.length < 2) {
+                            output = 'apt: missing operand\nUsage: apt COMMAND [PACKAGE]';
+                        } else {
+                            const action = args[1];
+                            const package = args[2] || '';
+                            
+                            switch(action) {
+                                case 'update':
+                                    output = 'Hit:1 http://deb.debian.org/debian bullseye InRelease\nGet:2 http://security.debian.org/debian-security bullseye-security InRelease [48.4 kB]\nGet:3 http://deb.debian.org/debian bullseye-updates InRelease [44.1 kB]\nFetched 92.5 kB in 2s (46.2 kB/s)\nReading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\n3 packages can be upgraded. Run \'apt list --upgradable\' to see them.';
+                                    break;
+                                case 'install':
+                                    if (!package) {
+                                        output = 'apt install: missing package name';
+                                    } else {
+                                        const packages = ['samba', 'isc-dhcp-server', 'bind9', 'openssh-server', 'vsftpd', 'apache2', 'nginx', 'mysql-server', 'mariadb-server'];
+                                        if (packages.includes(package)) {
+                                            output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following NEW packages will be installed:\n  ${package}\n0 upgraded, 1 newly installed, 0 to remove and 3 not upgraded.\nNeed to get 2,345 kB of archives.\nAfter this operation, 8,192 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 ${package} amd64 [2,345 kB]\nFetched 2,345 kB in 3s (781 kB/s)\nSelecting previously unselected package ${package}.\n(Reading database ... 123456 files and directories currently installed.)\nPreparing to unpack .../${package}_amd64.deb ...\nUnpacking ${package} ...\nSetting up ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} installed successfully.`;
+                                        } else {
+                                            output = `E: Unable to locate package ${package}`;
+                                        }
+                                    }
+                                    break;
+                                case 'remove':
+                                    if (!package) {
+                                        output = 'apt remove: missing package name';
+                                    } else {
+                                        output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following packages will be REMOVED:\n  ${package}\n0 upgraded, 0 newly installed, 1 to remove and 3 not upgraded.\nAfter this operation, 8,192 kB disk space will be freed.\nRemoving ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} removed successfully.`;
+                                    }
+                                    break;
+                                case 'search':
+                                    if (!package) {
+                                        output = 'apt search: missing search term';
+                                    } else {
+                                        output = `Sorting... Done\nFull Text Search... Done\n${package}/stable 1.2.3-4 amd64\n  ${package} - Sample package description\n\nsamba/stable 2:4.13.13+dfsg-1~deb11u5 amd64\n  SMB/CIFS file, print, and login server for Unix\n\nbind9/stable 1:9.16.27-1~deb11u2 amd64\n  Internet Domain Name Server`;
+                                    }
+                                    break;
+                                default:
+                                    output = `apt: invalid command '${action}'\nValid commands: update, install, remove, search`;
+                            }
+                        }
+                        break;
+                        
+                    case 'dpkg':
+                        if (args.includes('-l')) {
+                            output = 'Desired=Unknown/Install/Remove/Purge/Hold\n| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend\n|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)\n||/ Name                    Version          Architecture Description\n+++-=======================-================-============-================================\nii  adduser                 3.118            all          add and remove users and groups\nii  apt                     2.2.4            amd64        commandline package manager\nii  base-files              11.1+deb11u7     amd64        Debian base system miscellaneous files\nii  bash                    5.1-2+deb11u1    amd64        GNU Bourne Again SHell\nii  coreutils               8.32-4+b1        amd64        GNU core utilities\nii  openssh-server          1:8.4p1-5+deb11u1 amd64      secure shell (SSH) server';
+                        } else {
+                            output = 'dpkg: missing operand\nTry "dpkg --help" for more information.';
+                        }
+                        break;
+                        
+                    case 'netstat':
+                        if (args.includes('-tulpn')) {
+                            output = 'Active Internet connections (only servers)\nProto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name\ntcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      789/sshd: /usr/sbin\ntcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      1234/master\ntcp6       0      0 :::22                   :::*                    LISTEN      789/sshd: /usr/sbin\nudp        0      0 0.0.0.0:68              0.0.0.0:*                           567/dhclient';
+                        } else {
+                            output = 'netstat: missing operand\nTry "netstat --help" for more information.';
+                        }
+                        break;
+                        
+                    case 'ss':
+                        if (args.includes('-tulpn')) {
+                            output = 'Netid  State   Recv-Q  Send-Q   Local Address:Port    Peer Address:Port  Process\ntcp    LISTEN  0       128            0.0.0.0:22           0.0.0.0:*      users:(("sshd",pid=789,fd=3))\ntcp    LISTEN  0       100          127.0.0.1:25           0.0.0.0:*      users:(("master",pid=1234,fd=13))\ntcp    LISTEN  0       128               [::]:22              [::]:*      users:(("sshd",pid=789,fd=4))\nudp    UNCONN  0       0              0.0.0.0:68           0.0.0.0:*      users:(("dhclient",pid=567,fd=6))';
+                        } else {
+                            output = 'ss: missing operand\nTry "ss --help" for more information.';
+                        }
+                        break;
+                        
+                    default:
+                        output = 'bash: ' + command + ': command not found\nType "help" for available commands.';
+                }
+                
+                if (output) {
+                    loginContent.innerHTML += output + '\n';
+                }
+                
+                const currentPrompt = getCurrentPrompt();
+                loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
+                loginContent.scrollTop = loginContent.scrollHeight;
+            }
+
+            function getCurrentPrompt() {
+                const hostname = installationData.hostname || 'debian';
+                let displayPath = currentDirectory;
+                
+                // Convert /root to ~ for display
+                if (currentDirectory === '/root') {
+                    displayPath = '~';
+                } else if (currentDirectory.startsWith('/root/')) {
+                    displayPath = '~' + currentDirectory.substring(5);
+                }
+                
+                return `root@${hostname}:${displayPath}# `;
+            }
+        }
+
+        // Start the simulation
+        startBoot();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ecf9a007fefdcc',t:'MTc1NTEzODA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
