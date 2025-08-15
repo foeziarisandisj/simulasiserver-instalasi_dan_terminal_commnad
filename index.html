@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Debian Installation Simulator</title>
     <style>
         * {
@@ -112,14 +112,99 @@
 
         .login-screen {
             display: none;
-            background: #000;
-            color: #fff;
+            background: #000 !important;
+            color: #fff !important;
             padding: 20px;
-            height: 100vh;
+            height: 100vh !important;
             font-family: 'Courier New', monospace;
             overflow-y: auto;
             word-wrap: break-word;
             white-space: pre-wrap;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        /* Mobile Support Styles */
+        .mobile-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .mobile-keyboard-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 1001;
+            display: none;
+        }
+
+        .mobile-keyboard-trigger:hover {
+            background: #555;
+        }
+
+        .mobile-keyboard-trigger.active {
+            background: #007700;
+            border-color: #00aa00;
+        }
+
+        @media (max-width: 768px) {
+            .terminal, .login-screen {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .installer-screen {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .mobile-keyboard-trigger {
+                display: block;
+            }
+            
+            .nano-editor {
+                font-size: 12px;
+            }
+            
+            .nano-content {
+                padding: 5px;
+            }
+            
+            .nano-textarea {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .terminal, .login-screen {
+                font-size: 11px;
+                padding: 5px;
+            }
+            
+            .installer-screen {
+                font-size: 11px;
+                padding: 5px;
+            }
+            
+            .mobile-keyboard-trigger {
+                bottom: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
         }
 
         #loginContent {
@@ -145,6 +230,72 @@
         .typing {
             border-right: 2px solid #00ff00;
             animation: blink 1s infinite;
+        }
+
+        .nano-editor {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+        }
+
+        .nano-editor.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nano-header {
+            background: #000;
+            color: #fff;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .nano-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre;
+            font-size: 14px;
+            line-height: 1.2;
+            background: #000;
+            color: #fff;
+        }
+
+        .nano-textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            resize: none;
+            white-space: pre;
+        }
+
+        .nano-footer {
+            background: #000;
+            color: #fff;
+            padding: 5px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .nano-status {
+            background: #000080;
+            color: #fff;
+            padding: 2px 5px;
+            margin: 2px 0;
         }
     </style>
 </head>
@@ -457,6 +608,27 @@
     <!-- Login Screen -->
     <div id="loginScreen" class="login-screen">
         <div id="loginContent"></div>
+        <!-- Hidden input for mobile keyboard -->
+        <input type="text" id="mobileInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <!-- Mobile Keyboard Trigger Button -->
+    <button id="mobileKeyboard" class="mobile-keyboard-trigger">📱 Keyboard</button>
+
+    <!-- Nano Editor -->
+    <div id="nanoEditor" class="nano-editor">
+        <div class="nano-header">
+            <div>GNU nano 5.4</div>
+            <div id="nanoFilename">New Buffer</div>
+        </div>
+        <div class="nano-content">
+            <textarea id="nanoTextarea" class="nano-textarea" placeholder=""></textarea>
+        </div>
+        <div class="nano-footer">
+            <div>^G Help    ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location</div>
+            <div>^X Exit    ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line</div>
+        </div>
+        <div id="nanoStatus" class="nano-status" style="display: none;"></div>
     </div>
 
     <script>
@@ -816,29 +988,75 @@
         }
 
         function showLoginScreen() {
-            document.getElementById('bootScreen').style.display = 'none';
+            console.log('showLoginScreen called');
+            
+            // Hide all other screens
+            document.querySelectorAll('.installer-screen, .terminal').forEach(screen => {
+                screen.style.display = 'none';
+                screen.classList.remove('active');
+            });
+            
+            const bootScreen = document.getElementById('bootScreen');
+            bootScreen.style.display = 'none';
+            bootScreen.innerHTML = '';
+            
             const loginScreen = document.getElementById('loginScreen');
             const loginContent = document.getElementById('loginContent');
             
+            console.log('Login screen element:', loginScreen);
+            console.log('Login content element:', loginContent);
+            
+            // Force show login screen with multiple methods
+            loginScreen.style.display = 'block !important';
+            loginScreen.style.visibility = 'visible';
             loginScreen.classList.add('active');
             
             const hostname = installationData.hostname || 'debian';
-            loginContent.innerHTML = `
-Debian GNU/Linux 11 ${hostname} tty1
-
-${hostname} login: <span class="cursor">_</span>
-            `;
+            
+            // Show available login credentials
+            let credentialsInfo = '\nAvailable login credentials:\n';
+            credentialsInfo += `root / ${users.root.password}\n`;
+            if (installationData.username && users[installationData.username]) {
+                credentialsInfo += `${installationData.username} / ${users[installationData.username].password}\n`;
+            }
+            
+            const loginText = `Debian GNU/Linux 11 ${hostname} tty1
+${credentialsInfo}
+${hostname} login: <span class="cursor">_</span>`;
+            
+            loginContent.innerHTML = loginText;
+            console.log('Login content set:', loginText);
+            
+            // Force all styles
+            loginScreen.style.zIndex = '9999';
+            loginScreen.style.position = 'fixed';
+            loginScreen.style.top = '0';
+            loginScreen.style.left = '0';
+            loginScreen.style.width = '100vw';
+            loginScreen.style.height = '100vh';
+            loginScreen.style.background = '#000';
+            loginScreen.style.color = '#fff';
+            loginScreen.style.fontFamily = 'Courier New, monospace';
+            loginScreen.style.padding = '20px';
+            loginScreen.style.overflow = 'auto';
+            
+            console.log('Login screen should now be visible');
             
             // Handle login input
             let loginStep = 'username';
             let inputBuffer = '';
             
-            document.addEventListener('keydown', function(e) {
+            // Register login handler for mobile support
+            if (!document._loginHandlers) {
+                document._loginHandlers = [];
+            }
+            
+            function loginHandler(e) {
                 if (!loginScreen.classList.contains('active')) return;
                 
                 if (e.key === 'Enter') {
                     if (loginStep === 'username') {
-                        if (inputBuffer === 'root') {
+                        if (users[inputBuffer]) {
                             loginContent.innerHTML += inputBuffer + '\nPassword: ';
                             loginStep = 'password';
                             inputBuffer = '';
@@ -847,7 +1065,25 @@ ${hostname} login: <span class="cursor">_</span>
                             inputBuffer = '';
                         }
                     } else if (loginStep === 'password') {
-                        if (inputBuffer === installationData.rootPassword) {
+                        // Check if user exists and password matches
+                        const lines = loginContent.innerHTML.split('\n');
+                        let username = 'root';
+                        
+                        // Find the username from the login prompt
+                        for (let i = lines.length - 1; i >= 0; i--) {
+                            if (lines[i].includes(' login: ') && !lines[i].includes('Password:')) {
+                                const match = lines[i].match(/login: (.+)$/);
+                                if (match) {
+                                    username = match[1].trim();
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (users[username] && inputBuffer === users[username].password) {
+                            currentUser = username;
+                            currentDirectory = users[username].home;
+                            
                             loginContent.innerHTML += '\nLast login: ' + new Date().toLocaleString() + ' on tty1\n';
                             loginContent.innerHTML += 'Linux ' + hostname + ' 5.10.0-21-amd64 #1 SMP Debian 5.10.162-1 (2023-01-21) x86_64\n\n';
                             loginContent.innerHTML += 'The programs included with the Debian GNU/Linux system are free software;\n';
@@ -855,7 +1091,8 @@ ${hostname} login: <span class="cursor">_</span>
                             loginContent.innerHTML += 'individual files in /usr/share/doc/*/copyright.\n\n';
                             loginContent.innerHTML += 'Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent\n';
                             loginContent.innerHTML += 'permitted by applicable law.\n';
-                            loginContent.innerHTML += 'root@' + hostname + ':~# <span class="cursor">_</span>';
+                            const currentPrompt = getCurrentPrompt();
+                            loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
                             loginStep = 'shell';
                             inputBuffer = '';
                         } else {
@@ -878,7 +1115,11 @@ ${hostname} login: <span class="cursor">_</span>
                 }
                 
                 e.preventDefault();
-            });
+            }
+            
+            // Register the handler
+            document._loginHandlers.push(loginHandler);
+            document.addEventListener('keydown', loginHandler);
             
             function updateLoginDisplay() {
                 const lines = loginContent.innerHTML.split('\n');
@@ -896,9 +1137,66 @@ ${hostname} login: <span class="cursor">_</span>
                 loginContent.innerHTML = lines.join('\n');
             }
             
-            // Virtual filesystem
+            // Virtual filesystem and user management - Initialize immediately
             let currentDirectory = '/root';
-            let filesystem = {
+            let currentUser = 'root';
+            let users = {};
+            let installedPackages = ['base-files', 'bash', 'coreutils', 'openssh-server']; // Default installed packages
+            let services = {}; // Will be initialized in initializeSystem
+            let filesystem = {};
+            
+            // Initialize system immediately
+            initializeSystem();
+            
+            function initializeSystem() {
+                // Initialize users
+                users = {
+                    'root': {
+                        password: installationData.rootPassword || 'root123', // Default password if not set
+                        home: '/root',
+                        shell: '/bin/bash',
+                        uid: 0,
+                        gid: 0,
+                        groups: ['root']
+                    }
+                };
+                
+                // Add regular user if created during installation
+                if (installationData.username && installationData.userPassword) {
+                    users[installationData.username] = {
+                        password: installationData.userPassword,
+                        home: '/home/' + installationData.username,
+                        shell: '/bin/bash',
+                        uid: 1000,
+                        gid: 1000,
+                        groups: [installationData.username, 'users', 'sudo']
+                    };
+                }
+                
+                // Initialize services based on installed packages
+                services = {
+                    'ssh': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                    'sshd': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                    'openssh-server': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                    'samba': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                    'smbd': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                    'nmbd': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                    'isc-dhcp-server': { status: 'inactive', enabled: false, installed: installedPackages.includes('isc-dhcp-server') },
+                    'dhcpd': { status: 'inactive', enabled: false, installed: installedPackages.includes('isc-dhcp-server') },
+                    'bind9': { status: 'inactive', enabled: false, installed: installedPackages.includes('bind9') },
+                    'named': { status: 'inactive', enabled: false, installed: installedPackages.includes('bind9') },
+                    'vsftpd': { status: 'inactive', enabled: false, installed: installedPackages.includes('vsftpd') },
+                    'apache2': { status: 'inactive', enabled: false, installed: installedPackages.includes('apache2') },
+                    'nginx': { status: 'inactive', enabled: false, installed: installedPackages.includes('nginx') },
+                    'mysql': { status: 'inactive', enabled: false, installed: installedPackages.includes('mysql-server') },
+                    'mariadb': { status: 'inactive', enabled: false, installed: installedPackages.includes('mariadb-server') }
+                };
+                
+                initializeFilesystem();
+            }
+            
+            function initializeFilesystem() {
+                filesystem = {
                 '/': {
                     type: 'directory',
                     contents: {
@@ -910,140 +1208,60 @@ ${hostname} login: <span class="cursor">_</span>
                                 'Downloads': { type: 'directory', contents: {} },
                                 'Music': { type: 'directory', contents: {} },
                                 'Pictures': { type: 'directory', contents: {} },
-                                'Videos': { type: 'directory', contents: {} },
-                                'test.txt': { type: 'file', content: 'Hello World\nThis is a test file.\n', size: 25 },
-                                'config.conf': { type: 'file', content: '# Configuration file\nserver_name = localhost\nport = 8080\n', size: 45 },
-                                'script.sh': { type: 'file', content: '#!/bin/bash\necho "Hello from script!"\nls -la\n', size: 35 },
-                                'notes.txt': { type: 'file', content: 'Important notes:\n- Meeting at 2 PM\n- Backup database\n- Update system\n', size: 55 }
+                                'Videos': { type: 'directory', contents: {} }
                             }
                         },
-                        'home': { 
-                            type: 'directory', 
-                            contents: {
-                                'user1': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'Documents': { type: 'directory', contents: {} },
-                                        'Downloads': { type: 'directory', contents: {} },
-                                        'profile.txt': { type: 'file', content: 'User profile information\nName: User One\nEmail: user1@example.com\n', size: 55 }
-                                    }
-                                }
-                            }
-                        },
+                        'home': { type: 'directory', contents: {} },
                         'etc': { 
                             type: 'directory', 
                             contents: {
-                                'debian_version': { type: 'file', content: '11.6', size: 4 },
-                                'hostname': { type: 'file', content: 'debian', size: 6 },
-                                'passwd': { type: 'file', content: 'root:x:0:0:root:/bin/bash\n', size: 25 },
-                                'network': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'interfaces': { type: 'file', content: 'auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet dhcp\n', size: 45 }
-                                    }
+                                'passwd': { 
+                                    type: 'file', 
+                                    content: generatePasswdFile(),
+                                    size: generatePasswdFile().length
                                 },
-                                'ssh': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'sshd_config': { type: 'file', content: 'Port 22\nProtocol 2\nHostKey /etc/ssh/ssh_host_rsa_key\nPermitRootLogin yes\n', size: 65 }
-                                    }
+                                'shadow': {
+                                    type: 'file',
+                                    content: 'root:$6$encrypted$hash:18000:0:99999:7:::\n',
+                                    size: 45
+                                },
+                                'hostname': {
+                                    type: 'file',
+                                    content: installationData.hostname || 'debian',
+                                    size: (installationData.hostname || 'debian').length
                                 }
                             }
                         },
-                        'var': { 
-                            type: 'directory', 
-                            contents: {
-                                'log': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'syslog': { type: 'file', content: 'Jan 21 10:30:01 debian systemd: Starting system...\nJan 21 10:30:02 debian sshd: Server listening on 0.0.0.0 port 22\n', size: 95 }
-                                    }
-                                },
-                                'cache': { type: 'directory', contents: {} },
-                                'spool': { type: 'directory', contents: {} }
-                            }
-                        },
-                        'usr': { 
-                            type: 'directory', 
-                            contents: {
-                                'bin': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'bash': { type: 'file', content: '#!/bin/bash\n# Bash shell executable\n', size: 30 },
-                                        'ls': { type: 'file', content: '#!/bin/bash\n# List directory contents\n', size: 35 },
-                                        'cat': { type: 'file', content: '#!/bin/bash\n# Concatenate files\n', size: 30 }
-                                    }
-                                },
-                                'sbin': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'sshd': { type: 'file', content: '#!/bin/bash\n# SSH daemon\n', size: 25 },
-                                        'init': { type: 'file', content: '#!/bin/bash\n# System init process\n', size: 30 }
-                                    }
-                                },
-                                'local': { 
-                                    type: 'directory', 
-                                    contents: {
-                                        'bin': { 
-                                            type: 'directory', 
-                                            contents: {
-                                                'custom_script': { type: 'file', content: '#!/bin/bash\necho "Custom script executed!"\n', size: 35 }
-                                            }
-                                        },
-                                        'etc': { 
-                                            type: 'directory', 
-                                            contents: {
-                                                'custom.conf': { type: 'file', content: '# Custom configuration\nsetting1 = value1\nsetting2 = value2\n', size: 45 }
-                                            }
-                                        },
-                                        'src': { 
-                                            type: 'directory', 
-                                            contents: {
-                                                'project1': { 
-                                                    type: 'directory', 
-                                                    contents: {
-                                                        'main.py': { type: 'file', content: '#!/usr/bin/env python3\nprint("Hello from Python!")\n', size: 35 },
-                                                        'README.md': { type: 'file', content: '# Project 1\n\nThis is a sample project.\n', size: 30 },
-                                                        'config.py': { type: 'file', content: '# Configuration file\nDEBUG = True\nPORT = 8000\nHOST = "localhost"\n', size: 50 },
-                                                        'utils.py': { type: 'file', content: '#!/usr/bin/env python3\n# Utility functions\ndef helper():\n    return "Helper function"\n', size: 55 },
-                                                        'tests': { 
-                                                            type: 'directory', 
-                                                            contents: {
-                                                                'test_main.py': { type: 'file', content: '#!/usr/bin/env python3\nimport unittest\nfrom main import *\n\nclass TestMain(unittest.TestCase):\n    def test_basic(self):\n        self.assertTrue(True)\n', size: 95 }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        'tmp': { 
-                            type: 'directory', 
-                            contents: {
-                                'temp_file.txt': { type: 'file', content: 'This is a temporary file\n', size: 25 }
-                            }
-                        }
+                        'var': { type: 'directory', contents: {} },
+                        'usr': { type: 'directory', contents: {} },
+                        'tmp': { type: 'directory', contents: {} }
                     }
                 }
             };
 
-            // Track installed packages and their status
-            let installedPackages = {
-                'openssh-server': { status: 'active', enabled: true },
-                'standard-system-utilities': { status: 'active', enabled: true }
-            };
+                // Initialize home directories for users created during installation
+                if (installationData.username) {
+                    filesystem['/'].contents.home.contents[installationData.username] = {
+                        type: 'directory',
+                        contents: {
+                            'Desktop': { type: 'directory', contents: {} },
+                            'Documents': { type: 'directory', contents: {} },
+                            'Downloads': { type: 'directory', contents: {} },
+                            'Music': { type: 'directory', contents: {} },
+                            'Pictures': { type: 'directory', contents: {} },
+                            'Videos': { type: 'directory', contents: {} }
+                        }
+                    };
+                }
+            }
 
-            // Nano editor state
-            let nanoState = {
-                isActive: false,
-                currentFile: null,
-                content: '',
-                cursorPosition: 0,
-                scrollOffset: 0
-            };
+            function generatePasswdFile() {
+                let passwdContent = 'root:x:0:0:root:/root:/bin/bash\n';
+                if (installationData.username) {
+                    passwdContent += `${installationData.username}:x:1000:1000:${installationData.fullName || installationData.username}:/home/${installationData.username}:/bin/bash\n`;
+                }
+                return passwdContent;
+            }
 
             function getDirectoryContents(path) {
                 const parts = path.split('/').filter(p => p);
@@ -1089,203 +1307,6 @@ ${hostname} login: <span class="cursor">_</span>
                 return false;
             }
 
-            function createFile(path, name, content = '') {
-                const dir = getDirectoryContents(path);
-                if (dir && dir.type === 'directory') {
-                    if (!dir.contents[name]) {
-                        dir.contents[name] = { type: 'file', content: content, size: content.length };
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            function updateFileContent(path, name, newContent) {
-                const dir = getDirectoryContents(path);
-                if (dir && dir.type === 'directory' && dir.contents[name] && dir.contents[name].type === 'file') {
-                    dir.contents[name].content = newContent;
-                    dir.contents[name].size = newContent.length;
-                    return true;
-                }
-                return false;
-            }
-
-            function getFileContent(path, name) {
-                const dir = getDirectoryContents(path);
-                if (dir && dir.type === 'directory' && dir.contents[name] && dir.contents[name].type === 'file') {
-                    return dir.contents[name].content;
-                }
-                return null;
-            }
-
-            function startNanoEditor(filePath) {
-                const fileName = filePath.split('/').pop();
-                const fileContent = getFileContent(currentDirectory, fileName);
-                
-                if (fileContent === null) {
-                    // File doesn't exist, create it
-                    createFile(currentDirectory, fileName, '');
-                }
-                
-                nanoState.isActive = true;
-                nanoState.currentFile = fileName;
-                nanoState.content = getFileContent(currentDirectory, fileName) || '';
-                nanoState.cursorPosition = 0;
-                nanoState.scrollOffset = 0;
-                
-                showNanoEditor();
-            }
-
-            function showNanoEditor() {
-                const loginContent = document.getElementById('loginContent');
-                const currentPrompt = getCurrentPrompt();
-                
-                // Clear screen and show nano editor
-                loginContent.innerHTML = '';
-                
-                const nanoHeader = `GNU nano 5.4    ${nanoState.currentFile}\n\n`;
-                const nanoFooter = '\n^X Exit  ^O Write Out  ^R Read File  ^Y Prev Page  ^K Cut Text  ^C Cur Pos\n^V Next Page  ^U Paste Text  ^T To Spell  ^W Where Is  ^G Get Help\n\n';
-                
-                // Display file content with cursor
-                let displayContent = nanoState.content;
-                if (nanoState.cursorPosition < displayContent.length) {
-                    displayContent = displayContent.slice(0, nanoState.cursorPosition) + '<span class="cursor">█</span>' + displayContent.slice(nanoState.cursorPosition);
-                } else {
-                    displayContent += '<span class="cursor">█</span>';
-                }
-                
-                loginContent.innerHTML = nanoHeader + displayContent + nanoFooter;
-                
-                // Handle nano keyboard input
-                document.addEventListener('keydown', handleNanoInput);
-            }
-
-            function handleNanoInput(e) {
-                if (!nanoState.isActive) return;
-                
-                e.preventDefault();
-                
-                switch(e.key) {
-                    case 'Control':
-                        // Handle Ctrl combinations
-                        break;
-                    case 'x':
-                    case 'X':
-                        if (e.ctrlKey) {
-                            // Ctrl+X - Exit
-                            exitNanoEditor();
-                        } else {
-                            // Regular x key
-                            insertCharacter('x');
-                        }
-                        break;
-                    case 'o':
-                    case 'O':
-                        if (e.ctrlKey) {
-                            // Ctrl+O - Write Out (Save)
-                            saveFile();
-                        } else {
-                            // Regular o key
-                            insertCharacter('o');
-                        }
-                        break;
-                    case 'Backspace':
-                        if (nanoState.cursorPosition > 0) {
-                            nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition - 1) + 
-                                               nanoState.content.slice(nanoState.cursorPosition);
-                            nanoState.cursorPosition--;
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'Delete':
-                        if (nanoState.cursorPosition < nanoState.content.length) {
-                            nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition) + 
-                                               nanoState.content.slice(nanoState.cursorPosition + 1);
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'ArrowLeft':
-                        if (nanoState.cursorPosition > 0) {
-                            nanoState.cursorPosition--;
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'ArrowRight':
-                        if (nanoState.cursorPosition < nanoState.content.length) {
-                            nanoState.cursorPosition++;
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'ArrowUp':
-                        // Simple line navigation (go to previous line if possible)
-                        const lines = nanoState.content.split('\n');
-                        const currentLine = nanoState.content.substring(0, nanoState.cursorPosition).split('\n').length - 1;
-                        if (currentLine > 0) {
-                            const prevLineStart = nanoState.content.split('\n').slice(0, currentLine).join('\n').length + 1;
-                            nanoState.cursorPosition = Math.min(prevLineStart, nanoState.cursorPosition);
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'ArrowDown':
-                        // Simple line navigation (go to next line if possible)
-                        const lines2 = nanoState.content.split('\n');
-                        const currentLine2 = nanoState.content.substring(0, nanoState.cursorPosition).split('\n').length - 1;
-                        if (currentLine2 < lines2.length - 1) {
-                            const nextLineStart = nanoState.content.split('\n').slice(0, currentLine2 + 1).join('\n').length + 1;
-                            nanoState.cursorPosition = Math.min(nextLineStart, nanoState.content.length);
-                            showNanoEditor();
-                        }
-                        break;
-                    case 'Home':
-                        nanoState.cursorPosition = 0;
-                        showNanoEditor();
-                        break;
-                    case 'End':
-                        nanoState.cursorPosition = nanoState.content.length;
-                        showNanoEditor();
-                        break;
-                    case 'Enter':
-                        insertCharacter('\n');
-                        break;
-                    case 'Tab':
-                        insertCharacter('    '); // 4 spaces
-                        break;
-                    default:
-                        if (e.key.length === 1) {
-                            insertCharacter(e.key);
-                        }
-                }
-            }
-
-            function insertCharacter(char) {
-                nanoState.content = nanoState.content.slice(0, nanoState.cursorPosition) + 
-                                   char + 
-                                   nanoState.content.slice(nanoState.cursorPosition);
-                nanoState.cursorPosition += char.length;
-                showNanoEditor();
-            }
-
-            function saveFile() {
-                updateFileContent(currentDirectory, nanoState.currentFile, nanoState.content);
-                exitNanoEditor();
-            }
-
-            function exitNanoEditor() {
-                nanoState.isActive = false;
-                nanoState.currentFile = null;
-                nanoState.content = '';
-                nanoState.cursorPosition = 0;
-                
-                // Remove nano event listener
-                document.removeEventListener('keydown', handleNanoInput);
-                
-                // Return to shell
-                const loginContent = document.getElementById('loginContent');
-                const currentPrompt = getCurrentPrompt();
-                loginContent.innerHTML = currentPrompt + '<span class="cursor">_</span>';
-                loginContent.scrollTop = loginContent.scrollHeight;
-            }
-
             function executeCommand(cmd) {
                 const hostname = installationData.hostname || 'debian';
                 let output = '';
@@ -1309,8 +1330,7 @@ ${hostname} login: <span class="cursor">_</span>
                                 output += 'drwxr-xr-x  3 root root 4096 Jan 21 10:25 ..\n';
                                 for (const [name, item] of Object.entries(lsDir.contents)) {
                                     const type = item.type === 'directory' ? 'd' : '-';
-                                    const size = item.type === 'file' ? item.size : 4096;
-                                    output += `${type}rwx------  2 root root ${size} Jan 21 10:30 ${name}\n`;
+                                    output += `${type}rwx------  2 root root 4096 Jan 21 10:30 ${name}\n`;
                                 }
                             } else {
                                 const items = Object.keys(lsDir.contents);
@@ -1472,35 +1492,39 @@ ${hostname} login: <span class="cursor">_</span>
                         break;
                         
                     case 'cat':
-                        if (args[1] === '/etc/debian_version') {
-                            output = '11.6';
-                        } else if (args[1]) {
-                            const filePath = args[1];
-                            let fileContent = null;
+                        if (args.length < 2) {
+                            output = 'cat: missing operand\nTry "cat --help" for more information.';
+                        } else {
+                            const fileName = args[1];
                             
-                            if (filePath.startsWith('/')) {
-                                // Absolute path
-                                const pathParts = filePath.split('/').filter(p => p);
-                                if (pathParts.length >= 2) {
-                                    const dirPath = '/' + pathParts.slice(0, -1).join('/');
-                                    const fileName = pathParts[pathParts.length - 1];
-                                    const dir = getDirectoryContents(dirPath);
-                                    if (dir && dir.contents && dir.contents[fileName] && dir.contents[fileName].type === 'file') {
-                                        fileContent = dir.contents[fileName].content;
+                            // Handle special system files
+                            if (fileName === '/etc/debian_version') {
+                                output = '11.6';
+                            } else if (fileName === '/etc/passwd') {
+                                const etcDir = getDirectoryContents('/etc');
+                                if (etcDir && etcDir.contents && etcDir.contents.passwd) {
+                                    output = etcDir.contents.passwd.content;
+                                } else {
+                                    output = 'root:x:0:0:root:/root:/bin/bash\n';
+                                }
+                            } else if (fileName === '/etc/hostname') {
+                                output = installationData.hostname || 'debian';
+                            } else {
+                                // Check if file exists in current directory
+                                const dir = getDirectoryContents(currentDirectory);
+                                if (dir && dir.contents && dir.contents[fileName] && dir.contents[fileName].type === 'file') {
+                                    output = dir.contents[fileName].content || '';
+                                } else {
+                                    // Try absolute path
+                                    const absoluteDir = getDirectoryContents(fileName.substring(0, fileName.lastIndexOf('/')) || '/');
+                                    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+                                    if (absoluteDir && absoluteDir.contents && absoluteDir.contents[baseName] && absoluteDir.contents[baseName].type === 'file') {
+                                        output = absoluteDir.contents[baseName].content || '';
+                                    } else {
+                                        output = `cat: ${fileName}: No such file or directory`;
                                     }
                                 }
-                            } else {
-                                // Relative path
-                                fileContent = getFileContent(currentDirectory, filePath);
                             }
-                            
-                            if (fileContent !== null) {
-                                output = fileContent;
-                            } else {
-                                output = `cat: ${filePath}: No such file or directory`;
-                            }
-                        } else {
-                            output = 'cat: missing operand\nTry "cat --help" for more information.';
                         }
                         break;
                         
@@ -1549,8 +1573,8 @@ ${hostname} login: <span class="cursor">_</span>
                             output = 'nano: missing operand\nTry "nano --help" for more information.';
                         } else {
                             const fileName = args[1];
-                            startNanoEditor(fileName);
-                            return; // Don't show output, nano editor will take over
+                            openNanoEditor(fileName);
+                            return; // Don't show prompt until nano exits
                         }
                         break;
                         
@@ -1597,7 +1621,11 @@ ${hostname} login: <span class="cursor">_</span>
                             output = 'adduser: missing operand\nUsage: adduser USERNAME';
                         } else {
                             const username = args[1];
-                            output = `Adding user \`${username}' ...\nAdding new group \`${username}' (1001) ...\nAdding new user \`${username}' (1001) with group \`${username}' ...\nCreating home directory \`/home/${username}' ...\nCopying files from \`/etc/skel' ...\nNew password: (password input simulated)\nRetype new password: (password input simulated)\nChanging the user information for ${username}\nEnter the new value, or press ENTER for the default\n\tFull Name []: \n\tRoom Number []: \n\tWork Phone []: \n\tHome Phone []: \n\tOther []: \nIs the information correct? [Y/n] Y\nUser ${username} added successfully.`;
+                            if (addUser(username)) {
+                                output = `Adding user \`${username}' ...\nAdding new group \`${username}' (${users[username].uid}) ...\nAdding new user \`${username}' (${users[username].uid}) with group \`${username}' ...\nCreating home directory \`/home/${username}' ...\nCopying files from \`/etc/skel' ...\nNew password: (password set to 'password123')\nRetype new password: (confirmed)\nChanging the user information for ${username}\nEnter the new value, or press ENTER for the default\n\tFull Name []: \n\tRoom Number []: \n\tWork Phone []: \n\tHome Phone []: \n\tOther []: \nIs the information correct? [Y/n] Y\nUser ${username} added successfully.\nDefault password: password123`;
+                            } else {
+                                output = `adduser: The user \`${username}' already exists.`;
+                            }
                         }
                         break;
                         
@@ -1606,10 +1634,12 @@ ${hostname} login: <span class="cursor">_</span>
                             output = 'deluser: missing operand\nUsage: deluser USERNAME';
                         } else {
                             const username = args[1];
-                            if (username === 'root') {
+                            if (removeUser(username)) {
+                                output = `Removing user \`${username}' ...\nWarning: group \`${username}' has no more members.\nDone.`;
+                            } else if (username === 'root') {
                                 output = 'deluser: Cannot remove root user';
                             } else {
-                                output = `Removing user \`${username}' ...\nWarning: group \`${username}' has no more members.\nDone.`;
+                                output = `deluser: The user \`${username}' does not exist.`;
                             }
                         }
                         break;
@@ -1625,21 +1655,50 @@ ${hostname} login: <span class="cursor">_</span>
                         
                     case 'passwd':
                         if (args.length === 1) {
-                            output = 'Changing password for root.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully';
-                            // Update the stored root password for simulation
-                            installationData.rootPassword = 'newpassword';
+                            const newPassword = 'newpassword' + Math.floor(Math.random() * 100);
+                            if (changePassword(currentUser, newPassword)) {
+                                output = `Changing password for ${currentUser}.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully\nNew password: ${newPassword}`;
+                                // Update installation data if changing root password
+                                if (currentUser === 'root') {
+                                    installationData.rootPassword = newPassword;
+                                }
+                            } else {
+                                output = 'passwd: password change failed';
+                            }
                         } else {
                             const username = args[1];
-                            output = `Changing password for ${username}.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully`;
+                            if (users[username]) {
+                                const newPassword = 'newpassword' + Math.floor(Math.random() * 100);
+                                if (changePassword(username, newPassword)) {
+                                    output = `Changing password for ${username}.\nNew password: (password input simulated)\nRetype new password: (password input simulated)\npasswd: password updated successfully\nNew password: ${newPassword}`;
+                                } else {
+                                    output = 'passwd: password change failed';
+                                }
+                            } else {
+                                output = `passwd: user '${username}' does not exist`;
+                            }
                         }
                         break;
                         
                     case 'su':
                         if (args.length < 2) {
-                            output = 'su: missing operand\nUsage: su USERNAME';
+                            // Switch to root if no username provided
+                            if (currentUser !== 'root') {
+                                currentUser = 'root';
+                                currentDirectory = users['root'].home;
+                                output = `Password: (password input simulated)\nSwitched to root`;
+                            } else {
+                                output = 'Already logged in as root';
+                            }
                         } else {
                             const username = args[1];
-                            output = `Password: (password input simulated)\nSwitched to user ${username} (simulated)`;
+                            if (users[username]) {
+                                currentUser = username;
+                                currentDirectory = users[username].home;
+                                output = `Password: (password input simulated)\nSwitched to user ${username}`;
+                            } else {
+                                output = `su: user ${username} does not exist`;
+                            }
                         }
                         break;
                         
@@ -1682,52 +1741,245 @@ ${hostname} login: <span class="cursor">_</span>
                             const action = args[1];
                             const service = args[2] || '';
                             
-                            // Only show services that are actually installed
-                            if (!installedPackages[service] && !['ssh', 'sshd'].includes(service)) {
-                                output = `Unit ${service}.service could not be found.`;
-                                break;
-                            }
-                            
-                            // Map service names to package names
-                            const serviceMap = {
-                                'ssh': 'openssh-server',
-                                'sshd': 'openssh-server'
+                            // Get service descriptions
+                            const serviceDescriptions = {
+                                'ssh': 'OpenBSD Secure Shell server',
+                                'sshd': 'OpenBSD Secure Shell server',
+                                'openssh-server': 'OpenBSD Secure Shell server',
+                                'samba': 'Samba SMB/CIFS server',
+                                'smbd': 'Samba SMB/CIFS file server',
+                                'nmbd': 'Samba NetBIOS name server',
+                                'isc-dhcp-server': 'ISC DHCP IPv4 server',
+                                'dhcpd': 'ISC DHCP IPv4 server',
+                                'bind9': 'BIND Domain Name Server',
+                                'named': 'Berkeley Internet Name Domain (DNS)',
+                                'vsftpd': 'vsftpd FTP server',
+                                'apache2': 'The Apache HTTP Server',
+                                'nginx': 'A high performance web server and a reverse proxy server',
+                                'mysql': 'MySQL Community Server',
+                                'mariadb': 'MariaDB 10.5.19 database server'
                             };
-                            
-                            const packageName = serviceMap[service] || service;
-                            const serviceInfo = installedPackages[packageName];
-                            
-                            if (!serviceInfo) {
-                                        output = `Unit ${service}.service could not be found.`;
-                                break;
-                                    }
                             
                             switch(action) {
                                 case 'status':
-                                    output = `● ${service}.service - ${service} service\n   Loaded: loaded (/lib/systemd/system/${service}.service; ${serviceInfo.enabled ? 'enabled' : 'disabled'})\n   Active: ${serviceInfo.status} (${serviceInfo.status === 'active' ? 'running' : 'dead'}) since ${new Date().toLocaleString()}\n     Docs: man:${service}(8)\n   Main PID: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 9000) + 1000 : 'N/A'}\n    Tasks: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}\n   Memory: ${serviceInfo.status === 'active' ? Math.floor(Math.random() * 5) + 1 : '0'}M\n   CGroup: /system.slice/${service}.service`;
+                                    if (!service) {
+                                        output = 'systemctl status: missing service name';
+                                        break;
+                                    }
+                                    
+                                    // Check if service exists and is installed
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Unit ${service}.service could not be found.`;
+                                    } else {
+                                        const svc = services[service];
+                                        const description = serviceDescriptions[service] || `${service} service`;
+                                        const timestamp = new Date().toLocaleString('en-US', {
+                                            weekday: 'short',
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                        });
+                                        
+                                        const statusIcon = svc.status === 'active' ? '●' : '○';
+                                        const statusColor = svc.status === 'active' ? 'active' : 'inactive';
+                                        const runningState = svc.status === 'active' ? 'running' : 'dead';
+                                        const mainPID = svc.status === 'active' ? Math.floor(Math.random() * 9000) + 1000 : 'N/A';
+                                        const tasks = svc.status === 'active' ? Math.floor(Math.random() * 5) + 1 : 0;
+                                        const memory = svc.status === 'active' ? (Math.floor(Math.random() * 50) + 10) + '.0M' : '0B';
+                                        
+                                        output = `${statusIcon} ${service}.service - ${description}
+   Loaded: loaded (/lib/systemd/system/${service}.service; ${svc.enabled ? 'enabled' : 'disabled'}; vendor preset: enabled)
+   Active: ${statusColor} (${runningState}) since ${timestamp}
+     Docs: man:${service}(8)
+ Main PID: ${mainPID} (${service})
+    Tasks: ${tasks} (limit: 2359)
+   Memory: ${memory}
+   CGroup: /system.slice/${service}.service`;
+                                        
+                                        if (svc.status === 'active') {
+                                            output += `\n           └─${mainPID} /usr/sbin/${service}`;
+                                        }
+                                        
+                                        // Add recent log entries simulation
+                                        const logEntries = [
+                                            `${timestamp.split(' ').slice(0, 3).join(' ')} ${installationData.hostname || 'debian'} systemd[1]: Starting ${description}...`,
+                                            `${timestamp.split(' ').slice(0, 3).join(' ')} ${installationData.hostname || 'debian'} systemd[1]: Started ${description}.`
+                                        ];
+                                        
+                                        if (svc.status === 'active') {
+                                            logEntries.push(`${timestamp.split(' ').slice(0, 3).join(' ')} ${installationData.hostname || 'debian'} ${service}[${mainPID}]: Server listening on 0.0.0.0 port ${getServicePort(service)}.`);
+                                        }
+                                        
+                                        output += '\n\n' + logEntries.join('\n');
+                                    }
                                     break;
+                                    
                                 case 'start':
-                                    serviceInfo.status = 'active';
-                                        output = `Started ${service}.service`;
+                                    if (!service) {
+                                        output = 'systemctl start: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to start ${service}.service: Unit ${service}.service not found.`;
+                                    } else if (services[service].status === 'active') {
+                                        output = `Job for ${service}.service skipped because it is already active.`;
+                                    } else {
+                                        services[service].status = 'active';
+                                        // No output for successful start (systemctl behavior)
+                                    }
                                     break;
+                                    
                                 case 'stop':
-                                    serviceInfo.status = 'inactive';
-                                        output = `Stopped ${service}.service`;
+                                    if (!service) {
+                                        output = 'systemctl stop: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to stop ${service}.service: Unit ${service}.service not found.`;
+                                    } else if (services[service].status === 'inactive') {
+                                        output = `Job for ${service}.service skipped because it is not active.`;
+                                    } else {
+                                        services[service].status = 'inactive';
+                                        // No output for successful stop (systemctl behavior)
+                                    }
                                     break;
+                                    
                                 case 'restart':
-                                        output = `Restarted ${service}.service`;
+                                    if (!service) {
+                                        output = 'systemctl restart: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to restart ${service}.service: Unit ${service}.service not found.`;
+                                    } else {
+                                        services[service].status = 'active';
+                                        // No output for successful restart (systemctl behavior)
+                                    }
                                     break;
+                                    
                                 case 'enable':
-                                    serviceInfo.enabled = true;
+                                    if (!service) {
+                                        output = 'systemctl enable: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to enable unit: Unit file ${service}.service does not exist.`;
+                                    } else if (services[service].enabled) {
+                                        output = `Synchronizing state of ${service}.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable ${service}
+The unit files have no installation config (WantedBy, RequiredBy, Also, Alias
+settings in the [Install] section, and DefaultInstance for template units).
+This means they are not meant to be enabled using systemctl.
+Possible reasons for having this kind of units are:
+1) A unit may be statically enabled by being symlinked from another unit's
+   .wants/ or .requires/ directory.
+2) A unit's purpose may be to act as a helper for some other unit which has
+   a requirement dependency on it.
+3) A unit may be started when needed via activation (socket, path, timer,
+   D-Bus, udev, scripted systemctl call, ...).
+4) In case of template units, the unit is meant to be enabled with some
+   instance name specified.`;
+                                    } else {
+                                        services[service].enabled = true;
                                         output = `Created symlink /etc/systemd/system/multi-user.target.wants/${service}.service → /lib/systemd/system/${service}.service.`;
+                                    }
                                     break;
+                                    
                                 case 'disable':
-                                    serviceInfo.enabled = false;
+                                    if (!service) {
+                                        output = 'systemctl disable: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to disable unit: Unit file ${service}.service does not exist.`;
+                                    } else if (!services[service].enabled) {
+                                        output = `Synchronizing state of ${service}.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable ${service}`;
+                                    } else {
+                                        services[service].enabled = false;
                                         output = `Removed /etc/systemd/system/multi-user.target.wants/${service}.service.`;
+                                    }
                                     break;
+                                    
+                                case 'reload':
+                                    if (!service) {
+                                        output = 'systemctl reload: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = `Failed to reload ${service}.service: Unit ${service}.service not found.`;
+                                    } else if (services[service].status === 'inactive') {
+                                        output = `Failed to reload ${service}.service: Unit ${service}.service is not active, cannot reload.`;
+                                    } else {
+                                        // No output for successful reload (systemctl behavior)
+                                    }
+                                    break;
+                                    
+                                case 'is-active':
+                                    if (!service) {
+                                        output = 'systemctl is-active: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = 'unknown';
+                                    } else {
+                                        output = services[service].status;
+                                    }
+                                    break;
+                                    
+                                case 'is-enabled':
+                                    if (!service) {
+                                        output = 'systemctl is-enabled: missing service name';
+                                        break;
+                                    }
+                                    
+                                    if (!services[service] || !services[service].installed) {
+                                        output = 'Failed to get unit file state for ' + service + '.service: No such file or directory';
+                                    } else {
+                                        output = services[service].enabled ? 'enabled' : 'disabled';
+                                    }
+                                    break;
+                                    
+                                case 'list-units':
+                                    output = 'UNIT                     LOAD   ACTIVE SUB     DESCRIPTION\n';
+                                    for (const [serviceName, serviceData] of Object.entries(services)) {
+                                        if (serviceData.installed) {
+                                            const description = serviceDescriptions[serviceName] || `${serviceName} service`;
+                                            const load = 'loaded';
+                                            const active = serviceData.status;
+                                            const sub = serviceData.status === 'active' ? 'running' : 'dead';
+                                            output += `${serviceName.padEnd(24)} ${load.padEnd(6)} ${active.padEnd(6)} ${sub.padEnd(7)} ${description}\n`;
+                                        }
+                                    }
+                                    output += '\nLOAD   = Reflects whether the unit definition was properly loaded.\nACTIVE = The high-level unit activation state, i.e. generalization of SUB.\nSUB    = The low-level unit activation state, values depend on unit type.';
+                                    break;
+                                    
                                 default:
-                                    output = `systemctl: invalid command '${action}'\nValid commands: status, start, stop, restart, enable, disable`;
+                                    output = `systemctl: invalid command '${action}'\nValid commands: status, start, stop, restart, reload, enable, disable, is-active, is-enabled, list-units`;
                             }
+                        }
+                        
+                        function getServicePort(service) {
+                            const ports = {
+                                'ssh': 22, 'sshd': 22, 'openssh-server': 22,
+                                'apache2': 80, 'nginx': 80,
+                                'mysql': 3306, 'mariadb': 3306,
+                                'bind9': 53, 'named': 53,
+                                'vsftpd': 21,
+                                'samba': 445, 'smbd': 445, 'nmbd': 137,
+                                'isc-dhcp-server': 67, 'dhcpd': 67
+                            };
+                            return ports[service] || 8080;
                         }
                         break;
                         
@@ -1746,14 +1998,31 @@ ${hostname} login: <span class="cursor">_</span>
                                     if (!package) {
                                         output = 'apt install: missing package name';
                                     } else {
-                                        const packages = ['samba', 'isc-dhcp-server', 'bind9', 'openssh-server', 'vsftpd', 'apache2', 'nginx', 'mysql-server', 'mariadb-server'];
-                                        if (packages.includes(package)) {
-                                            // Add package to installed packages list
-                                            if (!installedPackages[package]) {
-                                                installedPackages[package] = { status: 'inactive', enabled: false };
+                                        const availablePackages = ['samba', 'isc-dhcp-server', 'bind9', 'openssh-server', 'vsftpd', 'apache2', 'nginx', 'mysql-server', 'mariadb-server'];
+                                        if (availablePackages.includes(package)) {
+                                            if (!installedPackages.includes(package)) {
+                                                installedPackages.push(package);
+                                                // Update service installation status
+                                                if (services[package]) {
+                                                    services[package].installed = true;
+                                                }
+                                                // Update related services
+                                                if (package === 'samba') {
+                                                    if (services['smbd']) services['smbd'].installed = true;
+                                                    if (services['nmbd']) services['nmbd'].installed = true;
+                                                } else if (package === 'isc-dhcp-server') {
+                                                    if (services['dhcpd']) services['dhcpd'].installed = true;
+                                                } else if (package === 'bind9') {
+                                                    if (services['named']) services['named'].installed = true;
+                                                } else if (package === 'mysql-server') {
+                                                    if (services['mysql']) services['mysql'].installed = true;
+                                                } else if (package === 'mariadb-server') {
+                                                    if (services['mariadb']) services['mariadb'].installed = true;
+                                                }
+                                                output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following NEW packages will be installed:\n  ${package}\n0 upgraded, 1 newly installed, 0 to remove and 3 not upgraded.\nNeed to get 2,345 kB of archives.\nAfter this operation, 8,192 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 ${package} amd64 [2,345 kB]\nFetched 2,345 kB in 3s (781 kB/s)\nSelecting previously unselected package ${package}.\n(Reading database ... 123456 files and directories currently installed.)\nPreparing to unpack .../${package}_amd64.deb ...\nUnpacking ${package} ...\nSetting up ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} installed successfully.`;
+                                            } else {
+                                                output = `${package} is already the newest version.\n0 upgraded, 0 newly installed, 0 to remove and 3 not upgraded.`;
                                             }
-                                            
-                                            output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following NEW packages will be installed:\n  ${package}\n0 upgraded, 1 newly installed, 0 to remove and 3 not upgraded.\nNeed to get 2,345 kB of archives.\nAfter this operation, 8,192 kB of additional disk space will be used.\nGet:1 http://deb.debian.org/debian bullseye/main amd64 ${package} amd64 [2,345 kB]\nFetched 2,345 kB in 3s (781 kB/s)\nSelecting previously unselected package ${package}.\n(Reading database ... 123456 files and directories currently installed.)\nPreparing to unpack .../${package}_amd64.deb ...\nUnpacking ${package} ...\nSetting up ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} installed successfully.`;
                                         } else {
                                             output = `E: Unable to locate package ${package}`;
                                         }
@@ -1763,12 +2032,55 @@ ${hostname} login: <span class="cursor">_</span>
                                     if (!package) {
                                         output = 'apt remove: missing package name';
                                     } else {
-                                        // Remove package from installed packages list
-                                        if (installedPackages[package]) {
-                                            delete installedPackages[package];
+                                        if (installedPackages.includes(package)) {
+                                            installedPackages = installedPackages.filter(p => p !== package);
+                                            // Update service installation status
+                                            if (services[package]) {
+                                                services[package].installed = false;
+                                                services[package].status = 'inactive';
+                                                services[package].enabled = false;
+                                            }
+                                            // Update related services
+                                            if (package === 'samba') {
+                                                if (services['smbd']) {
+                                                    services['smbd'].installed = false;
+                                                    services['smbd'].status = 'inactive';
+                                                    services['smbd'].enabled = false;
+                                                }
+                                                if (services['nmbd']) {
+                                                    services['nmbd'].installed = false;
+                                                    services['nmbd'].status = 'inactive';
+                                                    services['nmbd'].enabled = false;
+                                                }
+                                            } else if (package === 'isc-dhcp-server') {
+                                                if (services['dhcpd']) {
+                                                    services['dhcpd'].installed = false;
+                                                    services['dhcpd'].status = 'inactive';
+                                                    services['dhcpd'].enabled = false;
+                                                }
+                                            } else if (package === 'bind9') {
+                                                if (services['named']) {
+                                                    services['named'].installed = false;
+                                                    services['named'].status = 'inactive';
+                                                    services['named'].enabled = false;
+                                                }
+                                            } else if (package === 'mysql-server') {
+                                                if (services['mysql']) {
+                                                    services['mysql'].installed = false;
+                                                    services['mysql'].status = 'inactive';
+                                                    services['mysql'].enabled = false;
+                                                }
+                                            } else if (package === 'mariadb-server') {
+                                                if (services['mariadb']) {
+                                                    services['mariadb'].installed = false;
+                                                    services['mariadb'].status = 'inactive';
+                                                    services['mariadb'].enabled = false;
+                                                }
+                                            }
+                                            output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following packages will be REMOVED:\n  ${package}\n0 upgraded, 0 newly installed, 1 to remove and 3 not upgraded.\nAfter this operation, 8,192 kB disk space will be freed.\nRemoving ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} removed successfully.`;
+                                        } else {
+                                            output = `Package '${package}' is not installed, so not removed`;
                                         }
-                                        
-                                        output = `Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following packages will be REMOVED:\n  ${package}\n0 upgraded, 0 newly installed, 1 to remove and 3 not upgraded.\nAfter this operation, 8,192 kB disk space will be freed.\nRemoving ${package} ...\nProcessing triggers for systemd (247.3-7+deb11u4) ...\n${package} removed successfully.`;
                                     }
                                     break;
                                 case 'search':
@@ -1786,7 +2098,24 @@ ${hostname} login: <span class="cursor">_</span>
                         
                     case 'dpkg':
                         if (args.includes('-l')) {
-                            output = 'Desired=Unknown/Install/Remove/Purge/Hold\n| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend\n|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)\n||/ Name                    Version          Architecture Description\n+++-=======================-================-============-================================\nii  adduser                 3.118            all          add and remove users and groups\nii  apt                     2.2.4            amd64        commandline package manager\nii  base-files              11.1+deb11u7     amd64        Debian base system miscellaneous files\nii  bash                    5.1-2+deb11u1    amd64        GNU Bourne Again SHell\nii  coreutils               8.32-4+b1        amd64        GNU core utilities\nii  openssh-server          1:8.4p1-5+deb11u1 amd64      secure shell (SSH) server';
+                            output = 'Desired=Unknown/Install/Remove/Purge/Hold\n| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend\n|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)\n||/ Name                    Version          Architecture Description\n+++-=======================-================-============-================================\nii  adduser                 3.118            all          add and remove users and groups\nii  apt                     2.2.4            amd64        commandline package manager\nii  base-files              11.1+deb11u7     amd64        Debian base system miscellaneous files\nii  bash                    5.1-2+deb11u1    amd64        GNU Bourne Again SHell\nii  coreutils               8.32-4+b1        amd64        GNU core utilities';
+                            
+                            // Add installed packages
+                            installedPackages.forEach(pkg => {
+                                const descriptions = {
+                                    'openssh-server': 'secure shell (SSH) server',
+                                    'samba': 'SMB/CIFS file, print, and login server',
+                                    'isc-dhcp-server': 'ISC DHCP server for automatic IP address assignment',
+                                    'bind9': 'Internet Domain Name Server',
+                                    'vsftpd': 'lightweight, efficient FTP server',
+                                    'apache2': 'Apache HTTP Server',
+                                    'nginx': 'small, powerful, scalable web/proxy server',
+                                    'mysql-server': 'MySQL database server',
+                                    'mariadb-server': 'MariaDB database server'
+                                };
+                                const desc = descriptions[pkg] || `${pkg} package`;
+                                output += `\nii  ${pkg.padEnd(23)} 1.0.0            amd64        ${desc}`;
+                            });
                         } else {
                             output = 'dpkg: missing operand\nTry "dpkg --help" for more information.';
                         }
@@ -1821,23 +2150,613 @@ ${hostname} login: <span class="cursor">_</span>
                 loginContent.scrollTop = loginContent.scrollHeight;
             }
 
+            // Nano Editor Functions
+            function openNanoEditor(fileName) {
+                const nanoEditor = document.getElementById('nanoEditor');
+                const nanoFilename = document.getElementById('nanoFilename');
+                const nanoTextarea = document.getElementById('nanoTextarea');
+                const nanoStatus = document.getElementById('nanoStatus');
+                
+                // Get file content if it exists
+                const dir = getDirectoryContents(currentDirectory);
+                let fileContent = '';
+                let isNewFile = true;
+                let originalContent = '';
+                
+                // Handle absolute paths
+                let targetDir = dir;
+                let targetFileName = fileName;
+                
+                if (fileName.includes('/')) {
+                    const pathParts = fileName.split('/');
+                    targetFileName = pathParts.pop();
+                    const dirPath = pathParts.join('/') || '/';
+                    targetDir = getDirectoryContents(dirPath);
+                }
+                
+                if (targetDir && targetDir.contents && targetDir.contents[targetFileName] && targetDir.contents[targetFileName].type === 'file') {
+                    fileContent = targetDir.contents[targetFileName].content || '';
+                    originalContent = fileContent;
+                    isNewFile = false;
+                }
+                
+                nanoFilename.textContent = fileName + (isNewFile ? ' [New File]' : '');
+                nanoTextarea.value = fileContent;
+                nanoEditor.classList.add('active');
+                nanoTextarea.focus();
+                
+                let isModified = false;
+                let savePromptActive = false;
+                
+                // Handle nano keyboard shortcuts
+                function handleNanoKeydown(e) {
+                    if (savePromptActive) return; // Don't handle other shortcuts during save prompt
+                    
+                    if (e.ctrlKey) {
+                        switch(e.key.toLowerCase()) {
+                            case 'x': // Exit
+                                e.preventDefault();
+                                if (isModified) {
+                                    showSavePrompt();
+                                } else {
+                                    exitNano();
+                                }
+                                break;
+                            case 'o': // Write Out (Save)
+                                e.preventDefault();
+                                saveFile();
+                                break;
+                            case 'g': // Help
+                                e.preventDefault();
+                                showNanoHelp();
+                                break;
+                            case 'w': // Where Is (Search)
+                                e.preventDefault();
+                                showNanoStatus('Search: ');
+                                handleSearch();
+                                break;
+                            case 'k': // Cut line
+                                e.preventDefault();
+                                cutCurrentLine();
+                                break;
+                            case 'u': // Paste
+                                e.preventDefault();
+                                pasteText();
+                                break;
+                            case 'c': // Show cursor position
+                                e.preventDefault();
+                                showCursorPosition();
+                                break;
+                        }
+                    }
+                }
+                
+                let cutBuffer = '';
+                
+                function cutCurrentLine() {
+                    const textarea = nanoTextarea;
+                    const start = textarea.selectionStart;
+                    const value = textarea.value;
+                    
+                    // Find start and end of current line
+                    let lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    let lineEnd = value.indexOf('\n', start);
+                    if (lineEnd === -1) lineEnd = value.length;
+                    
+                    // Cut the line
+                    cutBuffer = value.substring(lineStart, lineEnd + (lineEnd < value.length ? 1 : 0));
+                    const newValue = value.substring(0, lineStart) + value.substring(lineEnd + (lineEnd < value.length ? 1 : 0));
+                    
+                    textarea.value = newValue;
+                    textarea.setSelectionRange(lineStart, lineStart);
+                    handleTextChange();
+                    
+                    showNanoStatus(`[ Cut 1 line ]`);
+                    setTimeout(() => hideNanoStatus(), 1500);
+                }
+                
+                function pasteText() {
+                    if (cutBuffer) {
+                        const textarea = nanoTextarea;
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const value = textarea.value;
+                        
+                        const newValue = value.substring(0, start) + cutBuffer + value.substring(end);
+                        textarea.value = newValue;
+                        textarea.setSelectionRange(start + cutBuffer.length, start + cutBuffer.length);
+                        handleTextChange();
+                        
+                        showNanoStatus(`[ Pasted 1 line ]`);
+                        setTimeout(() => hideNanoStatus(), 1500);
+                    } else {
+                        showNanoStatus('[ Nothing to paste ]');
+                        setTimeout(() => hideNanoStatus(), 1500);
+                    }
+                }
+                
+                function showCursorPosition() {
+                    const textarea = nanoTextarea;
+                    const value = textarea.value;
+                    const pos = textarea.selectionStart;
+                    
+                    // Calculate line and column
+                    const lines = value.substring(0, pos).split('\n');
+                    const line = lines.length;
+                    const col = lines[lines.length - 1].length + 1;
+                    const totalLines = value.split('\n').length;
+                    
+                    showNanoStatus(`[ line ${line}/${totalLines} (${Math.round(line/totalLines*100)}%), col ${col} ]`);
+                    setTimeout(() => hideNanoStatus(), 2000);
+                }
+                
+                function handleSearch() {
+                    let searchTerm = '';
+                    
+                    function handleSearchKeydown(e) {
+                        if (e.key === 'Enter') {
+                            if (searchTerm) {
+                                performSearch(searchTerm);
+                            }
+                            hideNanoStatus();
+                            document.removeEventListener('keydown', handleSearchKeydown);
+                        } else if (e.key === 'Escape' || (e.ctrlKey && e.key.toLowerCase() === 'c')) {
+                            hideNanoStatus();
+                            document.removeEventListener('keydown', handleSearchKeydown);
+                        } else if (e.key === 'Backspace') {
+                            searchTerm = searchTerm.slice(0, -1);
+                            showNanoStatus('Search: ' + searchTerm);
+                        } else if (e.key.length === 1) {
+                            searchTerm += e.key;
+                            showNanoStatus('Search: ' + searchTerm);
+                        }
+                        e.preventDefault();
+                    }
+                    
+                    document.addEventListener('keydown', handleSearchKeydown);
+                }
+                
+                function performSearch(term) {
+                    const textarea = nanoTextarea;
+                    const value = textarea.value.toLowerCase();
+                    const searchTerm = term.toLowerCase();
+                    const currentPos = textarea.selectionStart;
+                    
+                    const index = value.indexOf(searchTerm, currentPos);
+                    if (index !== -1) {
+                        textarea.setSelectionRange(index, index + term.length);
+                        textarea.focus();
+                        showNanoStatus(`[ Found "${term}" ]`);
+                    } else {
+                        // Search from beginning
+                        const indexFromStart = value.indexOf(searchTerm);
+                        if (indexFromStart !== -1) {
+                            textarea.setSelectionRange(indexFromStart, indexFromStart + term.length);
+                            textarea.focus();
+                            showNanoStatus(`[ Found "${term}" (wrapped) ]`);
+                        } else {
+                            showNanoStatus(`[ "${term}" not found ]`);
+                        }
+                    }
+                    setTimeout(() => hideNanoStatus(), 2000);
+                }
+                
+                function showNanoHelp() {
+                    const helpText = `GNU nano 5.4 - Help Text
+
+Main nano shortcuts:
+^G  Get Help        ^O  Write Out      ^W  Where Is       ^K  Cut Text       ^J  Justify
+^X  Exit            ^R  Read File      ^\\ Replace        ^U  Paste Text     ^T  To Spell
+^Y  Prev Page       ^V  Next Page      ^_  Go To Line     ^C  Cur Pos        ^A  Beginning
+^E  End             ^P  Prev Line      ^N  Next Line      ^F  Forward        ^B  Back
+
+^G or F1 for this help text
+^X to exit nano
+
+Press any key to return to the editor...`;
+                    
+                    const originalContent = nanoTextarea.value;
+                    nanoTextarea.value = helpText;
+                    nanoTextarea.readOnly = true;
+                    
+                    function exitHelp(e) {
+                        nanoTextarea.value = originalContent;
+                        nanoTextarea.readOnly = false;
+                        nanoTextarea.focus();
+                        document.removeEventListener('keydown', exitHelp);
+                        e.preventDefault();
+                    }
+                    
+                    document.addEventListener('keydown', exitHelp);
+                }
+                
+                function handleTextChange() {
+                    const currentContent = nanoTextarea.value;
+                    isModified = (currentContent !== originalContent);
+                    
+                    if (isModified && !nanoFilename.textContent.includes('[Modified]')) {
+                        nanoFilename.textContent = fileName + (isNewFile ? ' [New File]' : '') + ' [Modified]';
+                    } else if (!isModified) {
+                        nanoFilename.textContent = fileName + (isNewFile ? ' [New File]' : '');
+                    }
+                }
+                
+                function saveFile() {
+                    const content = nanoTextarea.value;
+                    let targetDir = getDirectoryContents(currentDirectory);
+                    let targetFileName = fileName;
+                    
+                    // Handle absolute paths
+                    if (fileName.includes('/')) {
+                        const pathParts = fileName.split('/');
+                        targetFileName = pathParts.pop();
+                        const dirPath = pathParts.join('/') || '/';
+                        targetDir = getDirectoryContents(dirPath);
+                    }
+                    
+                    if (targetDir && targetDir.type === 'directory') {
+                        targetDir.contents[targetFileName] = {
+                            type: 'file',
+                            content: content,
+                            size: content.length,
+                            owner: currentUser,
+                            permissions: '644',
+                            modified: new Date().toISOString()
+                        };
+                        
+                        originalContent = content;
+                        isModified = false;
+                        isNewFile = false;
+                        nanoFilename.textContent = fileName;
+                        
+                        const lineCount = content.split('\n').length;
+                        showNanoStatus(`[ Wrote ${lineCount} lines ]`);
+                        setTimeout(() => hideNanoStatus(), 2000);
+                    } else {
+                        showNanoStatus('Error: Cannot save file - directory not found');
+                        setTimeout(() => hideNanoStatus(), 2000);
+                    }
+                }
+                
+                function showSavePrompt() {
+                    savePromptActive = true;
+                    showNanoStatus('Save modified buffer? (Y/N/^C)');
+                    
+                    function handleSaveKeydown(e) {
+                        if (e.key.toLowerCase() === 'y') {
+                            saveFile();
+                            setTimeout(() => exitNano(), 500);
+                        } else if (e.key.toLowerCase() === 'n') {
+                            exitNano();
+                        } else if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+                            savePromptActive = false;
+                            hideNanoStatus();
+                            document.removeEventListener('keydown', handleSaveKeydown);
+                        }
+                        e.preventDefault();
+                    }
+                    
+                    document.addEventListener('keydown', handleSaveKeydown);
+                }
+                
+                function exitNano() {
+                    nanoEditor.classList.remove('active');
+                    document.removeEventListener('keydown', handleNanoKeydown);
+                    nanoTextarea.removeEventListener('input', handleTextChange);
+                    savePromptActive = false;
+                    
+                    // Clear any remaining event listeners
+                    document.removeEventListener('keydown', arguments.callee);
+                    
+                    // Return to terminal
+                    const currentPrompt = getCurrentPrompt();
+                    loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
+                    loginContent.scrollTop = loginContent.scrollHeight;
+                }
+                
+                function showNanoStatus(message) {
+                    nanoStatus.textContent = message;
+                    nanoStatus.style.display = 'block';
+                }
+                
+                function hideNanoStatus() {
+                    nanoStatus.style.display = 'none';
+                }
+                
+                // Add event listeners
+                document.addEventListener('keydown', handleNanoKeydown);
+                nanoTextarea.addEventListener('input', handleTextChange);
+                
+                // Mobile support for nano
+                if (isMobile) {
+                    // Auto-activate mobile input when nano opens
+                    setTimeout(() => {
+                        if (!mobileInputActive) {
+                            activateMobileInput();
+                        }
+                    }, 100);
+                    
+                    // Handle touch events on nano textarea
+                    nanoTextarea.addEventListener('touchstart', function(e) {
+                        if (!mobileInputActive) {
+                            activateMobileInput();
+                        }
+                        // Set cursor position based on touch
+                        const touch = e.touches[0];
+                        const rect = nanoTextarea.getBoundingClientRect();
+                        const x = touch.clientX - rect.left;
+                        const y = touch.clientY - rect.top;
+                        
+                        // Approximate cursor position
+                        const charWidth = 8; // Approximate character width
+                        const lineHeight = 16; // Approximate line height
+                        const col = Math.floor(x / charWidth);
+                        const row = Math.floor(y / lineHeight);
+                        
+                        const lines = nanoTextarea.value.split('\n');
+                        let pos = 0;
+                        for (let i = 0; i < row && i < lines.length; i++) {
+                            pos += lines[i].length + 1; // +1 for newline
+                        }
+                        if (row < lines.length) {
+                            pos += Math.min(col, lines[row].length);
+                        }
+                        
+                        nanoTextarea.setSelectionRange(pos, pos);
+                        e.preventDefault();
+                    });
+                }
+            }
+
+            // Enhanced User Management Functions
+            function addUser(username, password = 'password123') {
+                if (users[username]) {
+                    return false; // User already exists
+                }
+                
+                const uid = Object.keys(users).length + 1000;
+                const homeDir = '/home/' + username;
+                
+                users[username] = {
+                    password: password,
+                    home: homeDir,
+                    shell: '/bin/bash',
+                    uid: uid,
+                    gid: uid,
+                    groups: [username, 'users']
+                };
+                
+                // Create home directory
+                const homeParent = getDirectoryContents('/home');
+                if (homeParent && homeParent.type === 'directory') {
+                    homeParent.contents[username] = {
+                        type: 'directory',
+                        contents: {
+                            'Desktop': { type: 'directory', contents: {} },
+                            'Documents': { type: 'directory', contents: {} },
+                            'Downloads': { type: 'directory', contents: {} }
+                        }
+                    };
+                }
+                
+                // Update /etc/passwd
+                const etcDir = getDirectoryContents('/etc');
+                if (etcDir && etcDir.contents && etcDir.contents.passwd) {
+                    etcDir.contents.passwd.content += `${username}:x:${uid}:${uid}:${username}:${homeDir}:/bin/bash\n`;
+                    etcDir.contents.passwd.size = etcDir.contents.passwd.content.length;
+                }
+                
+                return true;
+            }
+            
+            function removeUser(username) {
+                if (!users[username] || username === 'root') {
+                    return false;
+                }
+                
+                // Remove user from users object
+                delete users[username];
+                
+                // Remove home directory
+                const homeParent = getDirectoryContents('/home');
+                if (homeParent && homeParent.contents && homeParent.contents[username]) {
+                    delete homeParent.contents[username];
+                }
+                
+                // Update /etc/passwd
+                const etcDir = getDirectoryContents('/etc');
+                if (etcDir && etcDir.contents && etcDir.contents.passwd) {
+                    const lines = etcDir.contents.passwd.content.split('\n');
+                    const filteredLines = lines.filter(line => !line.startsWith(username + ':'));
+                    etcDir.contents.passwd.content = filteredLines.join('\n');
+                    etcDir.contents.passwd.size = etcDir.contents.passwd.content.length;
+                }
+                
+                return true;
+            }
+            
+            function changePassword(username, newPassword) {
+                if (users[username]) {
+                    users[username].password = newPassword;
+                    return true;
+                }
+                return false;
+            }
+
             function getCurrentPrompt() {
                 const hostname = installationData.hostname || 'debian';
                 let displayPath = currentDirectory;
                 
-                // Convert /root to ~ for display
-                if (currentDirectory === '/root') {
+                // Convert home directory to ~ for display
+                const userHome = users[currentUser].home;
+                if (currentDirectory === userHome) {
                     displayPath = '~';
-                } else if (currentDirectory.startsWith('/root/')) {
-                    displayPath = '~' + currentDirectory.substring(5);
+                } else if (currentDirectory.startsWith(userHome + '/')) {
+                    displayPath = '~' + currentDirectory.substring(userHome.length);
                 }
                 
-                return `root@${hostname}:${displayPath}# `;
+                const promptChar = currentUser === 'root' ? '#' : '$';
+                return `${currentUser}@${hostname}:${displayPath}${promptChar} `;
             }
         }
+
+        // Mobile Support Functions
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        let mobileInputActive = false;
+        let mobileInputBuffer = '';
+
+        function initializeMobileSupport() {
+            const mobileKeyboardBtn = document.getElementById('mobileKeyboard');
+            const mobileInput = document.getElementById('mobileInput');
+            
+            if (isMobile) {
+                mobileKeyboardBtn.style.display = 'block';
+                
+                // Mobile keyboard button click
+                mobileKeyboardBtn.addEventListener('click', function() {
+                    if (!mobileInputActive) {
+                        activateMobileInput();
+                    } else {
+                        deactivateMobileInput();
+                    }
+                });
+                
+                // Handle mobile input
+                mobileInput.addEventListener('input', function(e) {
+                    if (mobileInputActive) {
+                        const newValue = e.target.value;
+                        const addedText = newValue.substring(mobileInputBuffer.length);
+                        
+                        // Process each new character
+                        for (let char of addedText) {
+                            processMobileInput(char);
+                        }
+                        
+                        mobileInputBuffer = newValue;
+                    }
+                });
+                
+                // Handle mobile input special keys
+                mobileInput.addEventListener('keydown', function(e) {
+                    if (mobileInputActive) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            processMobileInput('\n');
+                            mobileInput.value = '';
+                            mobileInputBuffer = '';
+                        } else if (e.key === 'Backspace') {
+                            e.preventDefault();
+                            processMobileInput('Backspace');
+                            // Update buffer to match input
+                            setTimeout(() => {
+                                mobileInputBuffer = mobileInput.value;
+                            }, 10);
+                        }
+                    }
+                });
+                
+                // Auto-focus mobile input when login screen is active
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.target.classList.contains('login-screen') && 
+                            mutation.target.classList.contains('active')) {
+                            setTimeout(() => {
+                                if (isMobile && !mobileInputActive) {
+                                    activateMobileInput();
+                                }
+                            }, 500);
+                        }
+                    });
+                });
+                
+                observer.observe(document.getElementById('loginScreen'), {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+                
+                // Touch support for terminal interaction
+                document.addEventListener('touchstart', function(e) {
+                    if (document.getElementById('loginScreen').classList.contains('active')) {
+                        if (!mobileInputActive) {
+                            activateMobileInput();
+                        }
+                    }
+                });
+            }
+        }
+        
+        function activateMobileInput() {
+            const mobileInput = document.getElementById('mobileInput');
+            const mobileKeyboardBtn = document.getElementById('mobileKeyboard');
+            
+            mobileInputActive = true;
+            mobileKeyboardBtn.classList.add('active');
+            mobileKeyboardBtn.textContent = '⌨️ Active';
+            
+            // Focus the hidden input to trigger mobile keyboard
+            mobileInput.focus();
+            mobileInput.click();
+            
+            // Clear any existing content
+            mobileInput.value = '';
+            mobileInputBuffer = '';
+        }
+        
+        function deactivateMobileInput() {
+            const mobileInput = document.getElementById('mobileInput');
+            const mobileKeyboardBtn = document.getElementById('mobileKeyboard');
+            
+            mobileInputActive = false;
+            mobileKeyboardBtn.classList.remove('active');
+            mobileKeyboardBtn.textContent = '📱 Keyboard';
+            
+            mobileInput.blur();
+        }
+        
+        function processMobileInput(input) {
+            // Create a synthetic keyboard event
+            const event = {
+                key: input === '\n' ? 'Enter' : input === 'Backspace' ? 'Backspace' : input,
+                ctrlKey: false,
+                preventDefault: () => {}
+            };
+            
+            // Route to appropriate handler based on current screen
+            if (document.getElementById('loginScreen').classList.contains('active')) {
+                // Find the current login handler
+                const handlers = document._loginHandlers || [];
+                if (handlers.length > 0) {
+                    handlers[handlers.length - 1](event);
+                }
+            } else if (document.getElementById('nanoEditor').classList.contains('active')) {
+                // Handle nano editor input
+                const nanoTextarea = document.getElementById('nanoTextarea');
+                if (input === 'Enter') {
+                    const pos = nanoTextarea.selectionStart;
+                    nanoTextarea.value = nanoTextarea.value.substring(0, pos) + '\n' + nanoTextarea.value.substring(pos);
+                    nanoTextarea.setSelectionRange(pos + 1, pos + 1);
+                } else if (input === 'Backspace') {
+                    const pos = nanoTextarea.selectionStart;
+                    if (pos > 0) {
+                        nanoTextarea.value = nanoTextarea.value.substring(0, pos - 1) + nanoTextarea.value.substring(pos);
+                        nanoTextarea.setSelectionRange(pos - 1, pos - 1);
+                    }
+                } else if (input.length === 1) {
+                    const pos = nanoTextarea.selectionStart;
+                    nanoTextarea.value = nanoTextarea.value.substring(0, pos) + input + nanoTextarea.value.substring(pos);
+                    nanoTextarea.setSelectionRange(pos + 1, pos + 1);
+                }
+                
+                // Trigger input event for nano
+                nanoTextarea.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // Initialize mobile support
+        initializeMobileSupport();
 
         // Start the simulation
         startBoot();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96ecf9a007fefdcc',t:'MTc1NTEzODA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f50a0d80718333',t:'MTc1NTIyMjYwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
