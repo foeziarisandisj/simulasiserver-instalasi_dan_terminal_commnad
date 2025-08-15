@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
     <title>Debian Installation Simulator</title>
     <style>
         * {
@@ -65,11 +65,21 @@
             cursor: pointer;
             background: #000080;
             border: 1px solid transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
         }
 
-        .menu-item:hover, .menu-item.selected {
+        .menu-item:hover, .menu-item.selected, .menu-item:active, .menu-item:focus {
             background: #ff0000;
             border: 1px solid #fff;
+        }
+
+        .menu-item:active {
+            transform: scale(0.98);
         }
 
         .input-field {
@@ -89,10 +99,22 @@
             margin: 10px 5px;
             cursor: pointer;
             font-family: 'Courier New', monospace;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 44px;
+            min-width: 88px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .button:hover {
+        .button:hover, .button:active, .button:focus {
             background: #ff0000;
+        }
+
+        .button:active {
+            transform: scale(0.98);
         }
 
         .progress-bar {
@@ -1166,6 +1188,9 @@
                 document.getElementById(stepId).classList.add('active');
             }
             currentStep = stepId;
+            
+            // Re-add touch support for new elements
+            setTimeout(addTouchSupport, 100);
         }
 
         function startHardwareDetection() {
@@ -3524,11 +3549,97 @@ Press any key to return to the editor...`;
             }
         }
 
+        // Enhanced Mobile Touch Support for Installation Buttons
+        function initializeInstallationTouchSupport() {
+            // Add touch event listeners to all buttons and menu items
+            document.addEventListener('DOMContentLoaded', function() {
+                addTouchSupport();
+            });
+            
+            // Also add immediately since DOM is already loaded
+            setTimeout(addTouchSupport, 100);
+        }
+        
+        function addTouchSupport() {
+            console.log('Adding touch support to installation elements');
+            
+            // Add touch support to all buttons
+            const buttons = document.querySelectorAll('.button');
+            buttons.forEach(button => {
+                if (!button.hasAttribute('data-touch-enabled')) {
+                    button.setAttribute('data-touch-enabled', 'true');
+                    
+                    // Add touch events
+                    button.addEventListener('touchstart', function(e) {
+                        console.log('Button touch start:', this.textContent);
+                        this.style.background = '#ff0000';
+                        e.preventDefault();
+                    }, { passive: false });
+                    
+                    button.addEventListener('touchend', function(e) {
+                        console.log('Button touch end:', this.textContent);
+                        this.style.background = '#000080';
+                        
+                        // Trigger click after a short delay
+                        setTimeout(() => {
+                            console.log('Triggering button click:', this.textContent);
+                            this.click();
+                        }, 50);
+                        
+                        e.preventDefault();
+                    }, { passive: false });
+                    
+                    button.addEventListener('touchcancel', function(e) {
+                        this.style.background = '#000080';
+                        e.preventDefault();
+                    }, { passive: false });
+                }
+            });
+            
+            // Add touch support to all menu items
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                if (!item.hasAttribute('data-touch-enabled')) {
+                    item.setAttribute('data-touch-enabled', 'true');
+                    
+                    item.addEventListener('touchstart', function(e) {
+                        console.log('Menu item touch start:', this.textContent);
+                        this.style.background = '#ff0000';
+                        this.style.border = '1px solid #fff';
+                        e.preventDefault();
+                    }, { passive: false });
+                    
+                    item.addEventListener('touchend', function(e) {
+                        console.log('Menu item touch end:', this.textContent);
+                        
+                        // Trigger click after a short delay
+                        setTimeout(() => {
+                            console.log('Triggering menu item click:', this.textContent);
+                            this.click();
+                        }, 50);
+                        
+                        e.preventDefault();
+                    }, { passive: false });
+                    
+                    item.addEventListener('touchcancel', function(e) {
+                        if (!this.classList.contains('selected')) {
+                            this.style.background = '#000080';
+                            this.style.border = '1px solid transparent';
+                        }
+                        e.preventDefault();
+                    }, { passive: false });
+                }
+            });
+        }
+        
+
+
         // Initialize mobile support
         initializeMobileSupport();
+        initializeInstallationTouchSupport();
 
         // Start the simulation
         startBoot();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f51c40970e8333',t:'MTc1NTIyMzM1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f523d941e38333',t:'MTc1NTIyMzY2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
