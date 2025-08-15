@@ -133,6 +133,7 @@
             left: -9999px;
             opacity: 0;
             pointer-events: none;
+            font-size: 16px; /* Prevent zoom on iOS */
         }
 
         .mobile-keyboard-trigger {
@@ -143,21 +144,45 @@
             color: #fff;
             border: 2px solid #555;
             padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: 8px;
             font-family: 'Courier New', monospace;
             font-size: 14px;
             cursor: pointer;
             z-index: 1001;
             display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
 
         .mobile-keyboard-trigger:hover {
             background: #555;
+            transform: translateY(-2px);
         }
 
         .mobile-keyboard-trigger.active {
             background: #007700;
             border-color: #00aa00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 4px 15px rgba(0,119,0,0.5); }
+            100% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        }
+
+        .mobile-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 1002;
+            display: none;
         }
 
         @media (max-width: 768px) {
@@ -614,6 +639,9 @@
 
     <!-- Mobile Keyboard Trigger Button -->
     <button id="mobileKeyboard" class="mobile-keyboard-trigger">📱 Keyboard</button>
+    
+    <!-- Mobile Status Indicator -->
+    <div id="mobileStatus" class="mobile-status">Mobile Mode</div>
 
     <!-- Nano Editor -->
     <div id="nanoEditor" class="nano-editor">
@@ -1026,6 +1054,14 @@ ${hostname} login: <span class="cursor">_</span>`;
             
             loginContent.innerHTML = loginText;
             console.log('Login content set:', loginText);
+            
+            // Auto-activate mobile input for login screen
+            if (isMobile) {
+                setTimeout(() => {
+                    console.log('Auto-activating mobile input for login');
+                    activateMobileInput();
+                }, 1000);
+            }
             
             // Force all styles
             loginScreen.style.zIndex = '9999';
@@ -2467,42 +2503,74 @@ Press any key to return to the editor...`;
                 document.addEventListener('keydown', handleNanoKeydown);
                 nanoTextarea.addEventListener('input', handleTextChange);
                 
-                // Mobile support for nano
+                // Enhanced mobile support for nano
                 if (isMobile) {
+                    console.log('Setting up mobile support for nano editor');
+                    
                     // Auto-activate mobile input when nano opens
                     setTimeout(() => {
+                        console.log('Auto-activating mobile input for nano');
                         if (!mobileInputActive) {
                             activateMobileInput();
                         }
-                    }, 100);
+                    }, 200);
                     
                     // Handle touch events on nano textarea
                     nanoTextarea.addEventListener('touchstart', function(e) {
+                        console.log('Touch on nano textarea');
                         if (!mobileInputActive) {
                             activateMobileInput();
                         }
+                        
                         // Set cursor position based on touch
                         const touch = e.touches[0];
                         const rect = nanoTextarea.getBoundingClientRect();
                         const x = touch.clientX - rect.left;
                         const y = touch.clientY - rect.top;
                         
-                        // Approximate cursor position
-                        const charWidth = 8; // Approximate character width
-                        const lineHeight = 16; // Approximate line height
-                        const col = Math.floor(x / charWidth);
-                        const row = Math.floor(y / lineHeight);
+                        // Calculate approximate cursor position
+                        const style = window.getComputedStyle(nanoTextarea);
+                        const fontSize = parseInt(style.fontSize);
+                        const charWidth = fontSize * 0.6; // Approximate monospace character width
+                        const lineHeight = parseInt(style.lineHeight) || fontSize * 1.2;
+                        
+                        const col = Math.max(0, Math.floor(x / charWidth));
+                        const row = Math.max(0, Math.floor(y / lineHeight));
                         
                         const lines = nanoTextarea.value.split('\n');
                         let pos = 0;
+                        
+                        // Calculate position
                         for (let i = 0; i < row && i < lines.length; i++) {
                             pos += lines[i].length + 1; // +1 for newline
                         }
                         if (row < lines.length) {
                             pos += Math.min(col, lines[row].length);
+                        } else if (lines.length > 0) {
+                            // If touch is beyond last line, go to end of last line
+                            pos = nanoTextarea.value.length;
                         }
                         
                         nanoTextarea.setSelectionRange(pos, pos);
+                        console.log('Set cursor position to:', pos);
+                        
+                        // Ensure mobile input stays active
+                        setTimeout(() => {
+                            const mobileInput = document.getElementById('mobileInput');
+                            mobileInput.focus();
+                        }, 50);
+                        
+                        e.preventDefault();
+                    });
+                    
+                    // Handle touch end to maintain focus
+                    nanoTextarea.addEventListener('touchend', function(e) {
+                        setTimeout(() => {
+                            if (mobileInputActive) {
+                                const mobileInput = document.getElementById('mobileInput');
+                                mobileInput.focus();
+                            }
+                        }, 100);
                         e.preventDefault();
                     });
                 }
@@ -2600,20 +2668,34 @@ Press any key to return to the editor...`;
             }
         }
 
-        // Mobile Support Functions
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        // Enhanced Mobile Support Functions
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                      ('ontouchstart' in window) || 
+                      (navigator.maxTouchPoints > 0) || 
+                      window.innerWidth <= 768;
         let mobileInputActive = false;
         let mobileInputBuffer = '';
+        let touchStartTime = 0;
 
         function initializeMobileSupport() {
             const mobileKeyboardBtn = document.getElementById('mobileKeyboard');
             const mobileInput = document.getElementById('mobileInput');
+            const mobileStatus = document.getElementById('mobileStatus');
+            
+            console.log('Mobile detection:', isMobile);
             
             if (isMobile) {
                 mobileKeyboardBtn.style.display = 'block';
+                mobileStatus.style.display = 'block';
+                
+                // Show mobile status briefly
+                setTimeout(() => {
+                    mobileStatus.style.display = 'none';
+                }, 3000);
                 
                 // Mobile keyboard button click
-                mobileKeyboardBtn.addEventListener('click', function() {
+                mobileKeyboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     if (!mobileInputActive) {
                         activateMobileInput();
                     } else {
@@ -2621,15 +2703,24 @@ Press any key to return to the editor...`;
                     }
                 });
                 
-                // Handle mobile input
+                // Handle mobile input changes
                 mobileInput.addEventListener('input', function(e) {
                     if (mobileInputActive) {
                         const newValue = e.target.value;
-                        const addedText = newValue.substring(mobileInputBuffer.length);
                         
-                        // Process each new character
-                        for (let char of addedText) {
-                            processMobileInput(char);
+                        // Handle text input
+                        if (newValue.length > mobileInputBuffer.length) {
+                            // Text was added
+                            const addedText = newValue.substring(mobileInputBuffer.length);
+                            for (let char of addedText) {
+                                processMobileInput(char);
+                            }
+                        } else if (newValue.length < mobileInputBuffer.length) {
+                            // Text was deleted (backspace)
+                            const deletedCount = mobileInputBuffer.length - newValue.length;
+                            for (let i = 0; i < deletedCount; i++) {
+                                processMobileInput('Backspace');
+                            }
                         }
                         
                         mobileInputBuffer = newValue;
@@ -2639,19 +2730,32 @@ Press any key to return to the editor...`;
                 // Handle mobile input special keys
                 mobileInput.addEventListener('keydown', function(e) {
                     if (mobileInputActive) {
+                        console.log('Mobile keydown:', e.key);
+                        
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            processMobileInput('\n');
-                            mobileInput.value = '';
-                            mobileInputBuffer = '';
-                        } else if (e.key === 'Backspace') {
-                            e.preventDefault();
-                            processMobileInput('Backspace');
-                            // Update buffer to match input
+                            processMobileInput('Enter');
+                            // Clear input after Enter
                             setTimeout(() => {
-                                mobileInputBuffer = mobileInput.value;
-                            }, 10);
+                                mobileInput.value = '';
+                                mobileInputBuffer = '';
+                            }, 50);
+                        } else if (e.key === 'Backspace') {
+                            // Let the input event handle backspace
+                            return;
                         }
+                    }
+                });
+                
+                // Handle composition events for international keyboards
+                mobileInput.addEventListener('compositionend', function(e) {
+                    if (mobileInputActive && e.data) {
+                        // Process composed text
+                        for (let char of e.data) {
+                            processMobileInput(char);
+                        }
+                        mobileInput.value = '';
+                        mobileInputBuffer = '';
                     }
                 });
                 
@@ -2674,14 +2778,37 @@ Press any key to return to the editor...`;
                     attributeFilter: ['class']
                 });
                 
-                // Touch support for terminal interaction
+                // Enhanced touch support for terminal interaction
                 document.addEventListener('touchstart', function(e) {
+                    touchStartTime = Date.now();
+                    
                     if (document.getElementById('loginScreen').classList.contains('active')) {
                         if (!mobileInputActive) {
-                            activateMobileInput();
+                            // Auto-activate on first touch
+                            setTimeout(() => activateMobileInput(), 100);
                         }
                     }
                 });
+                
+                document.addEventListener('touchend', function(e) {
+                    const touchDuration = Date.now() - touchStartTime;
+                    
+                    // If it's a quick tap on the terminal area
+                    if (touchDuration < 300 && document.getElementById('loginScreen').classList.contains('active')) {
+                        if (!mobileInputActive) {
+                            activateMobileInput();
+                        } else {
+                            // Refocus the input to ensure keyboard stays open
+                            const mobileInput = document.getElementById('mobileInput');
+                            mobileInput.focus();
+                        }
+                    }
+                });
+                
+                // Prevent zoom on double tap
+                document.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
             }
         }
         
@@ -2689,17 +2816,40 @@ Press any key to return to the editor...`;
             const mobileInput = document.getElementById('mobileInput');
             const mobileKeyboardBtn = document.getElementById('mobileKeyboard');
             
+            console.log('Activating mobile input...');
+            
             mobileInputActive = true;
             mobileKeyboardBtn.classList.add('active');
             mobileKeyboardBtn.textContent = '⌨️ Active';
             
-            // Focus the hidden input to trigger mobile keyboard
-            mobileInput.focus();
-            mobileInput.click();
-            
-            // Clear any existing content
+            // Clear any existing content first
             mobileInput.value = '';
             mobileInputBuffer = '';
+            
+            // Multiple attempts to focus and trigger keyboard
+            setTimeout(() => {
+                mobileInput.focus();
+                mobileInput.click();
+                
+                // Additional trigger for stubborn keyboards
+                setTimeout(() => {
+                    mobileInput.focus();
+                    // Simulate a touch event to ensure keyboard appears
+                    const touchEvent = new TouchEvent('touchstart', {
+                        bubbles: true,
+                        cancelable: true,
+                        touches: [new Touch({
+                            identifier: 0,
+                            target: mobileInput,
+                            clientX: 0,
+                            clientY: 0
+                        })]
+                    });
+                    mobileInput.dispatchEvent(touchEvent);
+                }, 100);
+            }, 50);
+            
+            console.log('Mobile input activated');
         }
         
         function deactivateMobileInput() {
@@ -2714,24 +2864,33 @@ Press any key to return to the editor...`;
         }
         
         function processMobileInput(input) {
+            console.log('Processing mobile input:', input);
+            
             // Create a synthetic keyboard event
             const event = {
-                key: input === '\n' ? 'Enter' : input === 'Backspace' ? 'Backspace' : input,
+                key: input === '\n' || input === 'Enter' ? 'Enter' : input === 'Backspace' ? 'Backspace' : input,
                 ctrlKey: false,
-                preventDefault: () => {}
+                altKey: false,
+                shiftKey: false,
+                preventDefault: () => {},
+                stopPropagation: () => {}
             };
             
             // Route to appropriate handler based on current screen
             if (document.getElementById('loginScreen').classList.contains('active')) {
+                console.log('Routing to login screen');
                 // Find the current login handler
                 const handlers = document._loginHandlers || [];
                 if (handlers.length > 0) {
                     handlers[handlers.length - 1](event);
+                } else {
+                    console.log('No login handlers found');
                 }
             } else if (document.getElementById('nanoEditor').classList.contains('active')) {
+                console.log('Routing to nano editor');
                 // Handle nano editor input
                 const nanoTextarea = document.getElementById('nanoTextarea');
-                if (input === 'Enter') {
+                if (input === 'Enter' || input === '\n') {
                     const pos = nanoTextarea.selectionStart;
                     nanoTextarea.value = nanoTextarea.value.substring(0, pos) + '\n' + nanoTextarea.value.substring(pos);
                     nanoTextarea.setSelectionRange(pos + 1, pos + 1);
@@ -2749,6 +2908,8 @@ Press any key to return to the editor...`;
                 
                 // Trigger input event for nano
                 nanoTextarea.dispatchEvent(new Event('input'));
+            } else {
+                console.log('No active screen found for input');
             }
         }
 
@@ -2758,5 +2919,5 @@ Press any key to return to the editor...`;
         // Start the simulation
         startBoot();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f50a0d80718333',t:'MTc1NTIyMjYwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f513b631b28333',t:'MTc1NTIyMzAwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
