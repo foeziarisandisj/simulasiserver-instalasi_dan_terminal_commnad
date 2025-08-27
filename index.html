@@ -1000,6 +1000,8 @@
     </div>
 
     <script>
+        // All JavaScript is now embedded - no external dependencies
+
         // Initialize global variables first
         let currentStep = 'languageScreen';
         let currentDirectory = '/root';
@@ -1062,12 +1064,12 @@
                     bootScreen.innerHTML += bootMessages[i] + '\n';
                     bootScreen.scrollTop = bootScreen.scrollHeight;
                     i++;
-                    setTimeout(typeMessage, Math.random() * 500 + 200);
+                    setTimeout(typeMessage, 200 + Math.floor(Math.random() * 200));
                 } else {
                     setTimeout(() => {
                         bootScreen.style.display = 'none';
                         document.getElementById('languageScreen').classList.add('active');
-                    }, 1000);
+                    }, 500);
                 }
             }
             typeMessage();
@@ -1158,7 +1160,7 @@
         }
 
         function nextStep(stepId) {
-            // Save user data based on current step
+            // Save user data based on current step BEFORE changing currentStep
             if (currentStep === 'networkScreen') {
                 installationData.hostname = document.getElementById('hostname').value || 'debian';
                 installationData.domain = document.getElementById('domain').value;
@@ -1186,7 +1188,7 @@
                 screen.classList.remove('active');
             });
 
-            // Update current step before showing next screen
+            // Update current step AFTER validation
             currentStep = stepId;
 
             // Show next screen with special handling for progress screens
@@ -1202,8 +1204,8 @@
                 document.getElementById(stepId).classList.add('active');
             }
             
-            // Re-add touch support for new elements
-            setTimeout(addTouchSupport, 100);
+            // Re-add touch support for new elements - use requestAnimationFrame instead of setTimeout
+            requestAnimationFrame(addTouchSupport);
         }
 
         function startHardwareDetection() {
@@ -1225,9 +1227,9 @@
                     statusDiv.textContent = hardwareSteps[step];
                     progressBar.style.width = ((step + 1) / hardwareSteps.length * 100) + '%';
                     step++;
-                    setTimeout(updateHardwareProgress, Math.random() * 1500 + 800);
+                    setTimeout(updateHardwareProgress, 800 + Math.floor(Math.random() * 400));
                 } else {
-                    setTimeout(() => nextStep('countryScreen'), 1000);
+                    setTimeout(() => nextStep('countryScreen'), 500);
                 }
             }
             updateHardwareProgress();
@@ -1252,9 +1254,9 @@
                     statusDiv.textContent = diskSteps[step];
                     progressBar.style.width = ((step + 1) / diskSteps.length * 100) + '%';
                     step++;
-                    setTimeout(updateDiskProgress, Math.random() * 1200 + 600);
+                    setTimeout(updateDiskProgress, 600 + Math.floor(Math.random() * 300));
                 } else {
-                    setTimeout(() => nextStep('partitionScreen'), 1000);
+                    setTimeout(() => nextStep('partitionScreen'), 500);
                 }
             }
             updateDiskProgress();
@@ -1279,9 +1281,9 @@
                     statusDiv.textContent = aptSteps[step];
                     progressBar.style.width = ((step + 1) / aptSteps.length * 100) + '%';
                     step++;
-                    setTimeout(updateAptProgress, Math.random() * 2000 + 1000);
+                    setTimeout(updateAptProgress, 1000 + Math.floor(Math.random() * 500));
                 } else {
-                    setTimeout(() => nextStep('packageScreen'), 1000);
+                    setTimeout(() => nextStep('packageScreen'), 500);
                 }
             }
             updateAptProgress();
@@ -1310,9 +1312,9 @@
                     statusDiv.textContent = installSteps[step];
                     progressBar.style.width = ((step + 1) / installSteps.length * 100) + '%';
                     step++;
-                    setTimeout(updateProgress, Math.random() * 2500 + 1500);
+                    setTimeout(updateProgress, 1500 + Math.floor(Math.random() * 800));
                 } else {
-                    setTimeout(() => nextStep('aptScreen'), 1000);
+                    setTimeout(() => nextStep('aptScreen'), 500);
                 }
             }
             updateProgress();
@@ -1363,9 +1365,9 @@
                     bootScreen.innerHTML += rebootMessages[i] + '\n';
                     bootScreen.scrollTop = bootScreen.scrollHeight;
                     i++;
-                    setTimeout(showRebootMessage, Math.random() * 300 + 100);
+                    setTimeout(showRebootMessage, 100 + Math.floor(Math.random() * 150));
                 } else {
-                    setTimeout(showLoginScreen, 1000);
+                    setTimeout(showLoginScreen, 500);
                 }
             }
             showRebootMessage();
@@ -2031,5 +2033,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975dbf8d87228e13',t:'MTc1NjMyMDU2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975de600022df892',t:'MTc1NjMyMjEzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
