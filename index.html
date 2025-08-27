@@ -749,7 +749,7 @@
             <input type="text" class="input-field" id="httpProxy" placeholder="http://proxy.example.com:8080/">
             <p>If you need to use a HTTP proxy to access the outside world, enter the proxy information here.</p>
         </div>
-        <button class="button" onclick="nextStep('popularityScreen')">Continue</button>
+        <button class="button" onclick="continueFromProxy()">Continue</button>
     </div>
 
     <!-- Popularity Contest -->
@@ -1149,6 +1149,15 @@
             event.target.classList.add('selected');
         }
 
+        function continueFromProxy() {
+            // Save proxy configuration if needed
+            const proxyValue = document.getElementById('httpProxy').value;
+            installationData.httpProxy = proxyValue;
+            
+            // Continue to popularity screen
+            nextStep('popularityScreen');
+        }
+
         function toggleSoftware(element) {
             if (element.textContent.includes('[*]')) {
                 element.textContent = element.textContent.replace('[*]', '[ ]');
@@ -1168,16 +1177,13 @@
                 const rootPass = document.getElementById('rootPassword').value;
                 const rootPassConfirm = document.getElementById('rootPasswordConfirm').value;
                 
-                if (!rootPass) {
-                    //alert('Root password is required!');
-                    return;
-                }
-                if (rootPass !== rootPassConfirm) {
+                // Only validate if password is provided
+                if (rootPass && rootPass !== rootPassConfirm) {
                     alert('Root passwords do not match!');
                     return;
                 }
                 
-                installationData.rootPassword = rootPass;
+                installationData.rootPassword = rootPass || 'root123'; // Default password if empty
                 installationData.fullName = document.getElementById('fullName').value;
                 installationData.username = document.getElementById('username').value;
                 installationData.userPassword = document.getElementById('userPassword').value;
@@ -1204,8 +1210,14 @@
                 document.getElementById(stepId).classList.add('active');
             }
             
-            // Re-add touch support for new elements - use requestAnimationFrame instead of setTimeout
-            requestAnimationFrame(addTouchSupport);
+            // Re-add touch support for new elements with throttling
+            if (!window.touchSupportPending) {
+                window.touchSupportPending = true;
+                setTimeout(() => {
+                    addTouchSupport();
+                    window.touchSupportPending = false;
+                }, 100);
+            }
         }
 
         function startHardwareDetection() {
@@ -1831,38 +1843,35 @@ ${hostname} login: <span class="cursor">_</span>`;
 
         // Touch support for installer
         function addTouchSupport() {
-            const menuItems = document.querySelectorAll('.menu-item');
-            const buttons = document.querySelectorAll('.button');
+            // Only add listeners to new elements that don't already have them
+            const menuItems = document.querySelectorAll('.menu-item:not([data-touch-enabled])');
+            const buttons = document.querySelectorAll('.button:not([data-touch-enabled])');
             
             menuItems.forEach(item => {
+                item.setAttribute('data-touch-enabled', 'true');
                 item.addEventListener('touchstart', function(e) {
                     e.preventDefault();
                     this.classList.add('selected');
-                });
+                }, { passive: false });
                 
                 item.addEventListener('touchend', function(e) {
                     e.preventDefault();
-                    // Trigger click after a short delay
-                    setTimeout(() => {
-                        this.click();
-                    }, 100);
-                });
+                    this.click();
+                }, { passive: false });
             });
             
             buttons.forEach(button => {
+                button.setAttribute('data-touch-enabled', 'true');
                 button.addEventListener('touchstart', function(e) {
                     e.preventDefault();
                     this.style.transform = 'scale(0.98)';
-                });
+                }, { passive: false });
                 
                 button.addEventListener('touchend', function(e) {
                     e.preventDefault();
                     this.style.transform = '';
-                    // Trigger click after a short delay
-                    setTimeout(() => {
-                        this.click();
-                    }, 100);
-                });
+                    this.click();
+                }, { passive: false });
             });
         }
 
@@ -2033,5 +2042,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975de600022df892',t:'MTc1NjMyMjEzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975f638cc75ff3fb',t:'MTc1NjMzNzc2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
