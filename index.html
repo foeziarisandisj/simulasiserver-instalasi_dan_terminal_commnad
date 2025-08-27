@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>Debian Installation Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .terminal {
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            padding: 20px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .installer-screen {
+            display: none;
+            background: #000080;
+            color: #fff;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .installer-screen.active {
+            display: block;
+        }
+
+        .installer-header {
+            background: #0000ff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 2px solid #fff;
+        }
+
+        .installer-content {
+            background: #000080;
+            padding: 20px;
+            border: 1px solid #fff;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            padding: 5px 10px;
+            margin: 2px 0;
+            cursor: pointer;
+            background: #000080;
+            border: 1px solid transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-item:hover, .menu-item.selected, .menu-item:active, .menu-item:focus {
+            background: #ff0000;
+            border: 1px solid #fff;
+        }
+
+        .menu-item:active {
+            transform: scale(0.98);
+        }
+
+        .input-field {
+            background: #000080;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 5px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button {
+            background: #000080;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 8px 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 44px;
+            min-width: 88px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button:hover, .button:active, .button:focus {
+            background: #ff0000;
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #000080;
+            border: 1px solid #fff;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .login-screen {
+            display: none;
+            background: #000 !important;
+            color: #fff !important;
+            padding: 20px;
+            height: 100vh !important;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            z-index: 1000 !important;
+        }
+
+        .login-screen.active {
+            display: block;
+        }
+
+        .cursor {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .typing {
+            border-right: 2px solid #00ff00;
+            animation: blink 1s infinite;
+        }
+
+        /* Mobile Support Styles */
+        .mobile-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+            font-size: 16px;
+        }
+
+        .mobile-keyboard-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 1001;
+            display: block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-keyboard-trigger:hover {
+            background: #555;
+            transform: translateY(-2px);
+        }
+
+        .mobile-keyboard-trigger.active {
+            background: #007700;
+            border-color: #00aa00;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 4px 15px rgba(0,119,0,0.5); }
+            100% { box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        }
+
+        .mobile-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 1002;
+            display: none;
+        }
+
+        /* Virtual Keyboard Styles */
+        .virtual-keyboard {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2c2c2c;
+            border-top: 2px solid #555;
+            padding: 10px;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .virtual-keyboard.active {
+            display: block;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+            gap: 4px;
+        }
+
+        .keyboard-key {
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 4px;
+            padding: 12px 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s ease;
+            min-width: 32px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .keyboard-key:hover {
+            background: #555;
+            transform: translateY(-1px);
+        }
+
+        .keyboard-key:active {
+            background: #666;
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .keyboard-key.wide {
+            flex: 1.5;
+            max-width: 80px;
+        }
+
+        .keyboard-key.extra-wide {
+            flex: 2;
+            max-width: 120px;
+        }
+
+        .keyboard-key.space {
+            flex: 4;
+        }
+
+        .keyboard-key.special {
+            background: #555;
+            font-size: 12px;
+        }
+
+        .keyboard-key.ctrl {
+            background: #007700;
+        }
+
+        .keyboard-key.ctrl:hover {
+            background: #009900;
+        }
+
+        .keyboard-key.shift {
+            background: #0066cc;
+        }
+
+        .keyboard-key.shift:hover {
+            background: #0088ff;
+        }
+
+        .keyboard-key.shift.active {
+            background: #00aaff;
+        }
+
+        .keyboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        .keyboard-title {
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .keyboard-close {
+            background: #cc0000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .keyboard-close:hover {
+            background: #ff0000;
+        }
+
+        .keyboard-mode-switch {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background: #007700;
+            border-color: #009900;
+        }
+
+        .mode-btn:hover {
+            background: #444;
+        }
+
+        .mode-btn.active:hover {
+            background: #009900;
+        }
+
+        @media (max-width: 768px) {
+            .terminal, .login-screen {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .installer-screen {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .mobile-keyboard-trigger {
+                display: block !important;
+            }
+            
+            .nano-editor {
+                font-size: 12px;
+            }
+            
+            .nano-content {
+                padding: 5px;
+            }
+            
+            .nano-textarea {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .terminal, .login-screen {
+                font-size: 11px;
+                padding: 5px;
+            }
+            
+            .installer-screen {
+                font-size: 11px;
+                padding: 5px;
+            }
+            
+            .mobile-keyboard-trigger {
+                bottom: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+
+        #loginContent {
+            max-width: 100%;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .nano-editor {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+        }
+
+        .nano-editor.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nano-header {
+            background: #000;
+            color: #fff;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .nano-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre;
+            font-size: 14px;
+            line-height: 1.2;
+            background: #000;
+            color: #fff;
+        }
+
+        .nano-textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.2;
+            resize: none;
+            white-space: pre;
+        }
+
+        .nano-footer {
+            background: #000;
+            color: #fff;
+            padding: 5px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .nano-status {
+            background: #000080;
+            color: #fff;
+            padding: 2px 5px;
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Boot Screen -->
+    <div id="bootScreen" class="terminal"></div>
+
+    <!-- Language Selection -->
+    <div id="languageScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Debian GNU/Linux installer boot menu</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select a language</h3>
+            <div class="menu-item selected" onclick="selectLanguage('English')">English</div>
+            <div class="menu-item" onclick="selectLanguage('Bahasa Indonesia')">Bahasa Indonesia</div>
+            <div class="menu-item" onclick="selectLanguage('Français')">Français</div>
+            <div class="menu-item" onclick="selectLanguage('Deutsch')">Deutsch</div>
+        </div>
+        <button class="button" onclick="nextStep('hardwareScreen')">Continue</button>
+    </div>
+
+    <!-- Detect Hardware -->
+    <div id="hardwareScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Detecting hardware and loading components</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Please wait while the installer detects your hardware...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="hardwareProgress"></div>
+            </div>
+            <div id="hardwareStatus">Detecting hardware...</div>
+        </div>
+    </div>
+
+    <!-- Country Selection -->
+    <div id="countryScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Select your location</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Country, territory or area:</h3>
+            <div class="menu-item selected" onclick="selectCountry('Indonesia')">Indonesia</div>
+            <div class="menu-item" onclick="selectCountry('United States')">United States</div>
+            <div class="menu-item" onclick="selectCountry('United Kingdom')">United Kingdom</div>
+            <div class="menu-item" onclick="selectCountry('Germany')">Germany</div>
+        </div>
+        <button class="button" onclick="nextStep('keyboardScreen')">Continue</button>
+    </div>
+
+    <!-- Keyboard Configuration -->
+    <div id="keyboardScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the keyboard</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Keyboard layout:</h3>
+            <div class="menu-item selected" onclick="selectKeyboard('American English')">American English</div>
+            <div class="menu-item" onclick="selectKeyboard('Indonesian')">Indonesian</div>
+            <div class="menu-item" onclick="selectKeyboard('German')">German</div>
+        </div>
+        <button class="button" onclick="nextStep('timezoneScreen')">Continue</button>
+    </div>
+
+    <!-- Timezone Configuration -->
+    <div id="timezoneScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the clock</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select your time zone:</h3>
+            <div class="menu-item selected" onclick="selectTimezone('Asia/Jakarta')">Asia/Jakarta</div>
+            <div class="menu-item" onclick="selectTimezone('America/New_York')">America/New_York</div>
+            <div class="menu-item" onclick="selectTimezone('Europe/London')">Europe/London</div>
+            <div class="menu-item" onclick="selectTimezone('Europe/Berlin')">Europe/Berlin</div>
+            <div class="menu-item" onclick="selectTimezone('UTC')">UTC</div>
+        </div>
+        <button class="button" onclick="nextStep('networkScreen')">Continue</button>
+    </div>
+
+    <!-- Network Configuration -->
+    <div id="networkScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the network</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Hostname:</h3>
+            <input type="text" class="input-field" id="hostname" value="debian" placeholder="Enter hostname">
+            <h3>Domain name:</h3>
+            <input type="text" class="input-field" id="domain" placeholder="Enter domain name (optional)">
+        </div>
+        <button class="button" onclick="nextStep('userScreen')">Continue</button>
+    </div>
+
+    <!-- User Setup -->
+    <div id="userScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Set up users and passwords</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Root password:</h3>
+            <input type="password" class="input-field" id="rootPassword" placeholder="Enter root password">
+            <h3>Re-enter password to verify:</h3>
+            <input type="password" class="input-field" id="rootPasswordConfirm" placeholder="Re-enter root password">
+            <h3>Full name for the new user:</h3>
+            <input type="text" class="input-field" id="fullName" placeholder="Enter full name">
+            <h3>Username for your account:</h3>
+            <input type="text" class="input-field" id="username" placeholder="Enter username">
+            <h3>Choose a password for the new user:</h3>
+            <input type="password" class="input-field" id="userPassword" placeholder="Enter user password">
+        </div>
+        <button class="button" onclick="nextStep('diskDetectScreen')">Continue</button>
+    </div>
+
+    <!-- Detect Disks -->
+    <div id="diskDetectScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Detect disks</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Detecting disks and all other hardware...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="diskProgress"></div>
+            </div>
+            <div id="diskStatus">Scanning for disks...</div>
+        </div>
+    </div>
+
+    <!-- Partition Disks -->
+    <div id="partitionScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Partition disks</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Partitioning method:</h3>
+            <div class="menu-item selected" onclick="selectPartition('guided')">Guided - use entire disk</div>
+            <div class="menu-item" onclick="selectPartition('guided-lvm')">Guided - use entire disk and set up LVM</div>
+            <div class="menu-item" onclick="selectPartition('guided-encrypted')">Guided - use entire disk and set up encrypted LVM</div>
+            <div class="menu-item" onclick="selectPartition('manual')">Manual</div>
+        </div>
+        <button class="button" onclick="nextStep('diskSelectScreen')">Continue</button>
+    </div>
+
+    <!-- Select Disk -->
+    <div id="diskSelectScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Select disk to partition</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select the disk to partition:</h3>
+            <div class="menu-item selected">/dev/sda - 20.0 GB Virtual Disk (VBOX HARDDISK)</div>
+            <div class="menu-item">/dev/sdb - 8.0 GB USB Drive (SanDisk Ultra)</div>
+        </div>
+        <button class="button" onclick="nextStep('partitionSchemeScreen')">Continue</button>
+    </div>
+
+    <!-- Partition Scheme -->
+    <div id="partitionSchemeScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Partition scheme</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Select partitioning scheme:</h3>
+            <div class="menu-item selected" onclick="selectScheme('all-in-one')">All files in one partition (recommended for new users)</div>
+            <div class="menu-item" onclick="selectScheme('separate-home')">Separate /home partition</div>
+            <div class="menu-item" onclick="selectScheme('separate-home-var-tmp')">Separate /home, /var, and /tmp partitions</div>
+        </div>
+        <button class="button" onclick="nextStep('partitionConfirmScreen')">Continue</button>
+    </div>
+
+    <!-- Confirm Partitioning -->
+    <div id="partitionConfirmScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Write changes to disks?</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Overview of your currently configured partitions and mount points:</h3>
+            <div style="background: #000; color: #fff; padding: 10px; margin: 10px 0; font-family: monospace;">
+/dev/sda1    ext4    /boot     512 MB<br>
+/dev/sda2    ext4    /         19.5 GB<br>
+/dev/sda3    swap    swap      1.0 GB
+            </div>
+            <p><strong>WARNING:</strong> This will destroy all data on the selected disk!</p>
+            <div class="menu-item selected" onclick="confirmPartition('yes')">Yes, write changes to disk</div>
+            <div class="menu-item" onclick="confirmPartition('no')">No, go back</div>
+        </div>
+        <button class="button" onclick="nextStep('installScreen')">Continue</button>
+    </div>
+
+    <!-- Installation Progress -->
+    <div id="installScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Installing the base system</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Installing packages...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="installProgress"></div>
+            </div>
+            <div id="installStatus">Preparing installation...</div>
+        </div>
+    </div>
+
+    <!-- Configure APT -->
+    <div id="aptScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configuring APT</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Configuring the package manager...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="aptProgress"></div>
+            </div>
+            <div id="aptStatus">Setting up package sources...</div>
+        </div>
+    </div>
+
+    <!-- Package Manager -->
+    <div id="packageScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the package manager</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Use a network mirror?</h3>
+            <div class="menu-item selected" onclick="selectMirror('yes')">Yes</div>
+            <div class="menu-item" onclick="selectMirror('no')">No</div>
+            <h3>Debian archive mirror country:</h3>
+            <div class="menu-item selected">Indonesia</div>
+            <div class="menu-item">United States</div>
+            <div class="menu-item">Germany</div>
+            <h3>Debian archive mirror:</h3>
+            <div class="menu-item selected">deb.debian.org</div>
+            <div class="menu-item">mirror.unej.ac.id</div>
+            <div class="menu-item">kartolo.sby.datautama.net.id</div>
+        </div>
+        <button class="button" onclick="nextStep('proxyScreen')">Continue</button>
+    </div>
+
+    <!-- HTTP Proxy -->
+    <div id="proxyScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configure the package manager</h2>
+        </div>
+        <div class="installer-content">
+            <h3>HTTP proxy information (blank for none):</h3>
+            <input type="text" class="input-field" id="httpProxy" placeholder="http://proxy.example.com:8080/">
+            <p>If you need to use a HTTP proxy to access the outside world, enter the proxy information here.</p>
+        </div>
+        <button class="button" onclick="nextStep('popularityScreen')">Continue</button>
+    </div>
+
+    <!-- Popularity Contest -->
+    <div id="popularityScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Configuring popularity-contest</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Participate in the package usage survey?</h3>
+            <p>The system may anonymously supply the distribution developers with statistics about the most used packages on this system.</p>
+            <div class="menu-item selected" onclick="selectPopularity('yes')">Yes</div>
+            <div class="menu-item" onclick="selectPopularity('no')">No</div>
+        </div>
+        <button class="button" onclick="nextStep('softwareScreen')">Continue</button>
+    </div>
+
+    <!-- Software Selection -->
+    <div id="softwareScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Software selection</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Choose software to install:</h3>
+            <div class="menu-item" onclick="toggleSoftware(this)">[ ] Debian desktop environment</div>
+            <div class="menu-item" onclick="toggleSoftware(this)">[ ] GNOME</div>
+            <div class="menu-item selected" onclick="toggleSoftware(this)">[*] SSH server</div>
+            <div class="menu-item selected" onclick="toggleSoftware(this)">[*] standard system utilities</div>
+        </div>
+        <button class="button" onclick="nextStep('grubScreen')">Continue</button>
+    </div>
+
+    <!-- GRUB Installation -->
+    <div id="grubScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Install the GRUB boot loader</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Install the GRUB boot loader to your primary drive?</h3>
+            <div class="menu-item selected" onclick="selectGrub('yes')">Yes</div>
+            <div class="menu-item" onclick="selectGrub('no')">No</div>
+            <h3>Device for boot loader installation:</h3>
+            <div class="menu-item selected">/dev/sda</div>
+        </div>
+        <button class="button" onclick="nextStep('finishScreen')">Continue</button>
+    </div>
+
+    <!-- Installation Complete -->
+    <div id="finishScreen" class="installer-screen">
+        <div class="installer-header">
+            <h2>Finish the installation</h2>
+        </div>
+        <div class="installer-content">
+            <h3>Installation complete</h3>
+            <p>The system is going to reboot.</p>
+            <p>Please remove the installation medium and press Continue to reboot.</p>
+        </div>
+        <button class="button" onclick="rebootSystem()">Continue</button>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div id="loginContent"></div>
+        <!-- Hidden input for mobile keyboard -->
+        <input type="text" id="mobileInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <!-- Mobile Keyboard Trigger Button -->
+    <button id="mobileKeyboard" class="mobile-keyboard-trigger">⌨️ Virtual Keyboard</button>
+    
+    <!-- Mobile Status Indicator -->
+    <div id="mobileStatus" class="mobile-status">Mobile Mode</div>
+
+    <!-- Virtual Keyboard -->
+    <div id="virtualKeyboard" class="virtual-keyboard">
+        <div class="keyboard-header">
+            <div class="keyboard-title">Virtual Keyboard</div>
+            <button class="keyboard-close" onclick="hideVirtualKeyboard()">✕</button>
+        </div>
+        
+        <div class="keyboard-mode-switch">
+            <button class="mode-btn active" onclick="setKeyboardMode('normal')" id="normalMode">ABC</button>
+            <button class="mode-btn" onclick="setKeyboardMode('symbols')" id="symbolsMode">!@#</button>
+            <button class="mode-btn" onclick="setKeyboardMode('function')" id="functionMode">F1-F12</button>
+        </div>
+        
+        <div id="keyboardContent">
+            <!-- Normal keyboard layout -->
+            <div id="normalKeyboard">
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('1')">1</div>
+                    <div class="keyboard-key" onclick="typeKey('2')">2</div>
+                    <div class="keyboard-key" onclick="typeKey('3')">3</div>
+                    <div class="keyboard-key" onclick="typeKey('4')">4</div>
+                    <div class="keyboard-key" onclick="typeKey('5')">5</div>
+                    <div class="keyboard-key" onclick="typeKey('6')">6</div>
+                    <div class="keyboard-key" onclick="typeKey('7')">7</div>
+                    <div class="keyboard-key" onclick="typeKey('8')">8</div>
+                    <div class="keyboard-key" onclick="typeKey('9')">9</div>
+                    <div class="keyboard-key" onclick="typeKey('0')">0</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('q')">q</div>
+                    <div class="keyboard-key" onclick="typeKey('w')">w</div>
+                    <div class="keyboard-key" onclick="typeKey('e')">e</div>
+                    <div class="keyboard-key" onclick="typeKey('r')">r</div>
+                    <div class="keyboard-key" onclick="typeKey('t')">t</div>
+                    <div class="keyboard-key" onclick="typeKey('y')">y</div>
+                    <div class="keyboard-key" onclick="typeKey('u')">u</div>
+                    <div class="keyboard-key" onclick="typeKey('i')">i</div>
+                    <div class="keyboard-key" onclick="typeKey('o')">o</div>
+                    <div class="keyboard-key" onclick="typeKey('p')">p</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('a')">a</div>
+                    <div class="keyboard-key" onclick="typeKey('s')">s</div>
+                    <div class="keyboard-key" onclick="typeKey('d')">d</div>
+                    <div class="keyboard-key" onclick="typeKey('f')">f</div>
+                    <div class="keyboard-key" onclick="typeKey('g')">g</div>
+                    <div class="keyboard-key" onclick="typeKey('h')">h</div>
+                    <div class="keyboard-key" onclick="typeKey('j')">j</div>
+                    <div class="keyboard-key" onclick="typeKey('k')">k</div>
+                    <div class="keyboard-key" onclick="typeKey('l')">l</div>
+                    <div class="keyboard-key wide special" onclick="typeKey('Backspace')">⌫</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key shift" onclick="toggleShift()" id="shiftKey">⇧</div>
+                    <div class="keyboard-key" onclick="typeKey('z')">z</div>
+                    <div class="keyboard-key" onclick="typeKey('x')">x</div>
+                    <div class="keyboard-key" onclick="typeKey('c')">c</div>
+                    <div class="keyboard-key" onclick="typeKey('v')">v</div>
+                    <div class="keyboard-key" onclick="typeKey('b')">b</div>
+                    <div class="keyboard-key" onclick="typeKey('n')">n</div>
+                    <div class="keyboard-key" onclick="typeKey('m')">m</div>
+                    <div class="keyboard-key extra-wide special" onclick="typeKey('Enter')">↵</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key ctrl" onclick="toggleCtrl()" id="ctrlKey">Ctrl</div>
+                    <div class="keyboard-key special" onclick="typeKey('/')/">/</div>
+                    <div class="keyboard-key space" onclick="typeKey(' ')">Space</div>
+                    <div class="keyboard-key special" onclick="typeKey('-')">-</div>
+                    <div class="keyboard-key special" onclick="typeKey('.')">.</div>
+                </div>
+            </div>
+            
+            <!-- Symbols keyboard layout -->
+            <div id="symbolsKeyboard" style="display: none;">
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('!')">!</div>
+                    <div class="keyboard-key" onclick="typeKey('@')">@</div>
+                    <div class="keyboard-key" onclick="typeKey('#')">#</div>
+                    <div class="keyboard-key" onclick="typeKey('$')">$</div>
+                    <div class="keyboard-key" onclick="typeKey('%')">%</div>
+                    <div class="keyboard-key" onclick="typeKey('^')">^</div>
+                    <div class="keyboard-key" onclick="typeKey('&')">&</div>
+                    <div class="keyboard-key" onclick="typeKey('*')">*</div>
+                    <div class="keyboard-key" onclick="typeKey('(')">(</div>
+                    <div class="keyboard-key" onclick="typeKey(')')">)</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('~')">~</div>
+                    <div class="keyboard-key" onclick="typeKey('`')">`</div>
+                    <div class="keyboard-key" onclick="typeKey('_')">_</div>
+                    <div class="keyboard-key" onclick="typeKey('+')">+</div>
+                    <div class="keyboard-key" onclick="typeKey('=')">=</div>
+                    <div class="keyboard-key" onclick="typeKey('{')">{</div>
+                    <div class="keyboard-key" onclick="typeKey('}')">}</div>
+                    <div class="keyboard-key" onclick="typeKey('[')">[</div>
+                    <div class="keyboard-key" onclick="typeKey(']')">]</div>
+                    <div class="keyboard-key" onclick="typeKey('|')">|</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('\\')">\\</div>
+                    <div class="keyboard-key" onclick="typeKey(':')">:</div>
+                    <div class="keyboard-key" onclick="typeKey(';')">;</div>
+                    <div class="keyboard-key" onclick="typeKey('\"')">\"</div>
+                    <div class="keyboard-key" onclick="typeKey(\"'\")">\'</div>
+                    <div class="keyboard-key" onclick="typeKey('<')">&lt;</div>
+                    <div class="keyboard-key" onclick="typeKey('>')">&gt;</div>
+                    <div class="keyboard-key" onclick="typeKey(',')">,</div>
+                    <div class="keyboard-key" onclick="typeKey('?')">?</div>
+                    <div class="keyboard-key wide special" onclick="typeKey('Backspace')">⌫</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key ctrl" onclick="toggleCtrl()" id="ctrlKeySymbols">Ctrl</div>
+                    <div class="keyboard-key special" onclick="typeKey('/')/">/</div>
+                    <div class="keyboard-key space" onclick="typeKey(' ')">Space</div>
+                    <div class="keyboard-key special" onclick="typeKey('-')">-</div>
+                    <div class="keyboard-key extra-wide special" onclick="typeKey('Enter')">↵</div>
+                </div>
+            </div>
+            
+            <!-- Function keys layout -->
+            <div id="functionKeyboard" style="display: none;">
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('F1')">F1</div>
+                    <div class="keyboard-key" onclick="typeKey('F2')">F2</div>
+                    <div class="keyboard-key" onclick="typeKey('F3')">F3</div>
+                    <div class="keyboard-key" onclick="typeKey('F4')">F4</div>
+                    <div class="keyboard-key" onclick="typeKey('F5')">F5</div>
+                    <div class="keyboard-key" onclick="typeKey('F6')">F6</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" onclick="typeKey('F7')">F7</div>
+                    <div class="keyboard-key" onclick="typeKey('F8')">F8</div>
+                    <div class="keyboard-key" onclick="typeKey('F9')">F9</div>
+                    <div class="keyboard-key" onclick="typeKey('F10')">F10</div>
+                    <div class="keyboard-key" onclick="typeKey('F11')">F11</div>
+                    <div class="keyboard-key" onclick="typeKey('F12')">F12</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key special" onclick="typeKey('Tab')">Tab</div>
+                    <div class="keyboard-key special" onclick="typeKey('Escape')">Esc</div>
+                    <div class="keyboard-key special" onclick="typeKey('ArrowUp')">↑</div>
+                    <div class="keyboard-key special" onclick="typeKey('ArrowDown')">↓</div>
+                    <div class="keyboard-key special" onclick="typeKey('ArrowLeft')">←</div>
+                    <div class="keyboard-key special" onclick="typeKey('ArrowRight')">→</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key ctrl" onclick="toggleCtrl()" id="ctrlKeyFunction">Ctrl</div>
+                    <div class="keyboard-key special" onclick="typeKey('Home')">Home</div>
+                    <div class="keyboard-key special" onclick="typeKey('End')">End</div>
+                    <div class="keyboard-key special" onclick="typeKey('PageUp')">PgUp</div>
+                    <div class="keyboard-key special" onclick="typeKey('PageDown')">PgDn</div>
+                    <div class="keyboard-key wide special" onclick="typeKey('Backspace')">⌫</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key space" onclick="typeKey(' ')">Space</div>
+                    <div class="keyboard-key extra-wide special" onclick="typeKey('Enter')">↵</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nano Editor -->
+    <div id="nanoEditor" class="nano-editor">
+        <div class="nano-header">
+            <div>GNU nano 5.4</div>
+            <div id="nanoFilename">New Buffer</div>
+        </div>
+        <div class="nano-content">
+            <textarea id="nanoTextarea" class="nano-textarea" placeholder=""></textarea>
+        </div>
+        <div class="nano-footer">
+            <div>^G Help    ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location</div>
+            <div>^X Exit    ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line</div>
+        </div>
+        <div id="nanoStatus" class="nano-status" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Initialize global variables first
+        let currentStep = 'boot';
+        let currentDirectory = '/root';
+        let currentUser = 'root';
+        let installedPackages = ['base-files', 'bash', 'coreutils', 'openssh-server'];
+        let services = {};
+        let filesystem = {};
+        let users = {};
+        let loginStep = 'username';
+        let inputBuffer = '';
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        let installationData = {
+            language: 'English',
+            country: 'Indonesia',
+            keyboard: 'American English',
+            hostname: 'debian',
+            domain: '',
+            rootPassword: '',
+            fullName: '',
+            username: '',
+            userPassword: ''
+        };
+
+        // Boot sequence
+        function startBoot() {
+            const bootScreen = document.getElementById('bootScreen');
+            const bootMessages = [
+                'BIOS Version 2.15.1236',
+                'Memory Test: 2048MB OK',
+                'Detecting Primary Master... IDE Hard Disk',
+                'Detecting Primary Slave... None',
+                'Detecting Secondary Master... ATAPI CD-ROM',
+                'Detecting Secondary Slave... None',
+                '',
+                'Booting from CD-ROM...',
+                '',
+                'Loading Debian GNU/Linux installer...',
+                'Loading initial ramdisk...',
+                '',
+                'Starting kernel...',
+                '',
+                '[    0.000000] Linux version 5.10.0-21-amd64',
+                '[    0.000000] Command line: BOOT_IMAGE=/install.amd/vmlinuz',
+                '[    0.123456] Memory: 2048MB available',
+                '[    0.234567] CPU: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz',
+                '[    0.345678] PCI: Found 12 devices',
+                '[    0.456789] USB: 3 ports detected',
+                '[    0.567890] Network: eth0 detected',
+                '[    1.234567] Starting Debian installer...',
+                '',
+                'Welcome to Debian GNU/Linux installer!',
+                '',
+                'Loading installer components...'
+            ];
+
+            let i = 0;
+            function typeMessage() {
+                if (i < bootMessages.length) {
+                    bootScreen.innerHTML += bootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(typeMessage, Math.random() * 500 + 200);
+                } else {
+                    setTimeout(() => {
+                        bootScreen.style.display = 'none';
+                        document.getElementById('languageScreen').classList.add('active');
+                    }, 1000);
+                }
+            }
+            typeMessage();
+        }
+
+        function selectLanguage(lang) {
+            installationData.language = lang;
+            document.querySelectorAll('#languageScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectCountry(country) {
+            installationData.country = country;
+            document.querySelectorAll('#countryScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectKeyboard(keyboard) {
+            installationData.keyboard = keyboard;
+            document.querySelectorAll('#keyboardScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectTimezone(timezone) {
+            installationData.timezone = timezone;
+            document.querySelectorAll('#timezoneScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectScheme(scheme) {
+            document.querySelectorAll('#partitionSchemeScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function confirmPartition(choice) {
+            document.querySelectorAll('#partitionConfirmScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectMirror(choice) {
+            document.querySelectorAll('#packageScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectPopularity(choice) {
+            document.querySelectorAll('#popularityScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectPartition(method) {
+            document.querySelectorAll('#partitionScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectGrub(option) {
+            document.querySelectorAll('#grubScreen .menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function toggleSoftware(element) {
+            if (element.textContent.includes('[*]')) {
+                element.textContent = element.textContent.replace('[*]', '[ ]');
+                element.classList.remove('selected');
+            } else {
+                element.textContent = element.textContent.replace('[ ]', '[*]');
+                element.classList.add('selected');
+            }
+        }
+
+        function nextStep(stepId) {
+            // Save user data
+            if (currentStep === 'networkScreen') {
+                installationData.hostname = document.getElementById('hostname').value || 'debian';
+                installationData.domain = document.getElementById('domain').value;
+            } else if (currentStep === 'userScreen') {
+                const rootPass = document.getElementById('rootPassword').value;
+                const rootPassConfirm = document.getElementById('rootPasswordConfirm').value;
+                
+                if (!rootPass) {
+                    alert('Root password is required!');
+                    return;
+                }
+                if (rootPass !== rootPassConfirm) {
+                    alert('Root passwords do not match!');
+                    return;
+                }
+                
+                installationData.rootPassword = rootPass;
+                installationData.fullName = document.getElementById('fullName').value;
+                installationData.username = document.getElementById('username').value;
+                installationData.userPassword = document.getElementById('userPassword').value;
+            }
+
+            // Hide current screen
+            document.querySelectorAll('.installer-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show next screen with special handling for progress screens
+            if (stepId === 'hardwareScreen') {
+                startHardwareDetection();
+            } else if (stepId === 'diskDetectScreen') {
+                startDiskDetection();
+            } else if (stepId === 'aptScreen') {
+                startAptConfiguration();
+            } else if (stepId === 'installScreen') {
+                startInstallation();
+            } else {
+                document.getElementById(stepId).classList.add('active');
+            }
+            currentStep = stepId;
+            
+            // Re-add touch support for new elements
+            setTimeout(addTouchSupport, 100);
+        }
+
+        function startHardwareDetection() {
+            document.getElementById('hardwareScreen').classList.add('active');
+            const progressBar = document.getElementById('hardwareProgress');
+            const statusDiv = document.getElementById('hardwareStatus');
+            
+            const hardwareSteps = [
+                'Detecting hardware...',
+                'Loading network drivers...',
+                'Loading storage drivers...',
+                'Loading input device drivers...',
+                'Configuring hardware...'
+            ];
+
+            let step = 0;
+            function updateHardwareProgress() {
+                if (step < hardwareSteps.length) {
+                    statusDiv.textContent = hardwareSteps[step];
+                    progressBar.style.width = ((step + 1) / hardwareSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateHardwareProgress, Math.random() * 1500 + 800);
+                } else {
+                    setTimeout(() => nextStep('countryScreen'), 1000);
+                }
+            }
+            updateHardwareProgress();
+        }
+
+        function startDiskDetection() {
+            document.getElementById('diskDetectScreen').classList.add('active');
+            const progressBar = document.getElementById('diskProgress');
+            const statusDiv = document.getElementById('diskStatus');
+            
+            const diskSteps = [
+                'Scanning for disks...',
+                'Loading SCSI drivers...',
+                'Loading SATA drivers...',
+                'Detecting partitions...',
+                'Configuring disk access...'
+            ];
+
+            let step = 0;
+            function updateDiskProgress() {
+                if (step < diskSteps.length) {
+                    statusDiv.textContent = diskSteps[step];
+                    progressBar.style.width = ((step + 1) / diskSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateDiskProgress, Math.random() * 1200 + 600);
+                } else {
+                    setTimeout(() => nextStep('partitionScreen'), 1000);
+                }
+            }
+            updateDiskProgress();
+        }
+
+        function startAptConfiguration() {
+            document.getElementById('aptScreen').classList.add('active');
+            const progressBar = document.getElementById('aptProgress');
+            const statusDiv = document.getElementById('aptStatus');
+            
+            const aptSteps = [
+                'Setting up package sources...',
+                'Downloading package lists...',
+                'Validating package signatures...',
+                'Configuring APT...',
+                'Updating package cache...'
+            ];
+
+            let step = 0;
+            function updateAptProgress() {
+                if (step < aptSteps.length) {
+                    statusDiv.textContent = aptSteps[step];
+                    progressBar.style.width = ((step + 1) / aptSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateAptProgress, Math.random() * 2000 + 1000);
+                } else {
+                    setTimeout(() => nextStep('packageScreen'), 1000);
+                }
+            }
+            updateAptProgress();
+        }
+
+        function startInstallation() {
+            document.getElementById('installScreen').classList.add('active');
+            const progressBar = document.getElementById('installProgress');
+            const statusDiv = document.getElementById('installStatus');
+            
+            const installSteps = [
+                'Preparing installation...',
+                'Creating partitions...',
+                'Formatting filesystems...',
+                'Installing base system...',
+                'Installing kernel...',
+                'Configuring system...',
+                'Installing essential packages...',
+                'Setting up users...',
+                'Finalizing base installation...'
+            ];
+
+            let step = 0;
+            function updateProgress() {
+                if (step < installSteps.length) {
+                    statusDiv.textContent = installSteps[step];
+                    progressBar.style.width = ((step + 1) / installSteps.length * 100) + '%';
+                    step++;
+                    setTimeout(updateProgress, Math.random() * 2500 + 1500);
+                } else {
+                    setTimeout(() => nextStep('aptScreen'), 1000);
+                }
+            }
+            updateProgress();
+        }
+
+        function rebootSystem() {
+            document.querySelectorAll('.installer-screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show reboot messages
+            const bootScreen = document.getElementById('bootScreen');
+            bootScreen.style.display = 'block';
+            bootScreen.innerHTML = '';
+            
+            const rebootMessages = [
+                'System is rebooting...',
+                '',
+                'GRUB loading...',
+                '',
+                'GNU GRUB version 2.06',
+                '',
+                '   Debian GNU/Linux',
+                '   Advanced options for Debian GNU/Linux',
+                '',
+                'Use the ↑ and ↓ keys to select which entry is highlighted.',
+                'Press enter to boot the selected OS, `e` to edit the commands',
+                'before booting or `c` for a command-line.',
+                '',
+                'The highlighted entry will be executed automatically in 5s.',
+                '',
+                'Loading Linux 5.10.0-21-amd64 ...',
+                'Loading initial ramdisk ...',
+                '',
+                '[    0.000000] Linux version 5.10.0-21-amd64',
+                '[    0.123456] Memory: 2048MB available',
+                '[    1.234567] Starting system...',
+                '[    2.345678] Mounting filesystems...',
+                '[    3.456789] Starting network...',
+                '[    4.567890] Starting SSH daemon...',
+                '[    5.678901] System ready.',
+                ''
+            ];
+
+            let i = 0;
+            function showRebootMessage() {
+                if (i < rebootMessages.length) {
+                    bootScreen.innerHTML += rebootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(showRebootMessage, Math.random() * 300 + 100);
+                } else {
+                    setTimeout(showLoginScreen, 1000);
+                }
+            }
+            showRebootMessage();
+        }
+
+        function showLoginScreen() {
+            // Hide all other screens
+            document.querySelectorAll('.installer-screen, .terminal').forEach(screen => {
+                screen.style.display = 'none';
+                screen.classList.remove('active');
+            });
+            
+            const bootScreen = document.getElementById('bootScreen');
+            bootScreen.style.display = 'none';
+            bootScreen.innerHTML = '';
+            
+            const loginScreen = document.getElementById('loginScreen');
+            const loginContent = document.getElementById('loginContent');
+            
+            // Force show login screen
+            loginScreen.style.display = 'block';
+            loginScreen.classList.add('active');
+            
+            const hostname = installationData.hostname || 'debian';
+            
+            // Initialize users object
+            users = {
+                'root': {
+                    password: installationData.rootPassword || 'root123',
+                    home: '/root',
+                    shell: '/bin/bash',
+                    uid: 0,
+                    gid: 0,
+                    groups: ['root']
+                }
+            };
+            
+            // Add regular user if created during installation
+            if (installationData.username && installationData.userPassword) {
+                users[installationData.username] = {
+                    password: installationData.userPassword,
+                    home: '/home/' + installationData.username,
+                    shell: '/bin/bash',
+                    uid: 1000,
+                    gid: 1000,
+                    groups: [installationData.username, 'users', 'sudo']
+                };
+            }
+            
+            // Show available login credentials
+            let credentialsInfo = '\nAvailable login credentials:\n';
+            credentialsInfo += `root / ${users.root.password}\n`;
+            if (installationData.username && users[installationData.username]) {
+                credentialsInfo += `${installationData.username} / ${users[installationData.username].password}\n`;
+            }
+            
+            const loginText = `Debian GNU/Linux 11 ${hostname} tty1
+${credentialsInfo}
+${hostname} login: <span class="cursor">_</span>`;
+            
+            loginContent.innerHTML = loginText;
+            
+            // Auto-activate mobile input for login screen
+            if (isMobile) {
+                setTimeout(() => {
+                    activateMobileInput();
+                }, 1000);
+            }
+            
+            // Handle login input
+            loginStep = 'username';
+            inputBuffer = '';
+            
+            // Register login handler
+            if (!document._loginHandlers) {
+                document._loginHandlers = [];
+            }
+            
+            function loginHandler(e) {
+                if (!loginScreen.classList.contains('active')) return;
+                
+                if (e.key === 'Enter') {
+                    if (loginStep === 'username') {
+                        if (users[inputBuffer]) {
+                            window.currentLoginUser = inputBuffer;
+                            loginContent.innerHTML += inputBuffer + '\nPassword: ';
+                            loginStep = 'password';
+                            inputBuffer = '';
+                        } else {
+                            loginContent.innerHTML += inputBuffer + '\nLogin incorrect\n\n' + hostname + ' login: ';
+                            inputBuffer = '';
+                        }
+                    } else if (loginStep === 'password') {
+                        // Check if user exists and password matches
+                        // Use stored username from login step
+                        if (window.currentLoginUser && users[window.currentLoginUser] && inputBuffer === users[window.currentLoginUser].password) {
+                            currentUser = window.currentLoginUser;
+                            currentDirectory = users[window.currentLoginUser].home;
+                            
+                            loginContent.innerHTML += '\nLast login: ' + new Date().toLocaleString() + ' on tty1\n';
+                            loginContent.innerHTML += 'Linux ' + hostname + ' 5.10.0-21-amd64 #1 SMP Debian 5.10.162-1 (2023-01-21) x86_64\n\n';
+                            loginContent.innerHTML += 'The programs included with the Debian GNU/Linux system are free software;\n';
+                            loginContent.innerHTML += 'the exact distribution terms for each program are described in the\n';
+                            loginContent.innerHTML += 'individual files in /usr/share/doc/*/copyright.\n\n';
+                            loginContent.innerHTML += 'Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent\n';
+                            loginContent.innerHTML += 'permitted by applicable law.\n';
+                            const currentPrompt = getCurrentPrompt();
+                            loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
+                            loginStep = 'shell';
+                            inputBuffer = '';
+                        } else {
+                            loginContent.innerHTML += '\nLogin incorrect\n\n' + hostname + ' login: ';
+                            loginStep = 'username';
+                            inputBuffer = '';
+                        }
+                    } else if (loginStep === 'shell') {
+                        executeCommand(inputBuffer);
+                        inputBuffer = '';
+                    }
+                } else if (e.key === 'Backspace') {
+                    if (inputBuffer.length > 0) {
+                        inputBuffer = inputBuffer.slice(0, -1);
+                        updateLoginDisplay();
+                    }
+                } else if (e.key.length === 1) {
+                    inputBuffer += e.key;
+                    updateLoginDisplay();
+                }
+                
+                e.preventDefault();
+            }
+            
+            // Register the handler
+            document._loginHandlers.push(loginHandler);
+            document.addEventListener('keydown', loginHandler);
+            
+
+        }
+
+        // Helper functions
+        function getCurrentPrompt() {
+            const hostname = installationData.hostname || 'debian';
+            if (currentUser === 'root') {
+                return `root@${hostname}:${currentDirectory}# `;
+            } else {
+                return `${currentUser}@${hostname}:${currentDirectory}$ `;
+            }
+        }
+
+        function initializeSystem() {
+            // Initialize services based on installed packages
+            services = {
+                'ssh': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                'sshd': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                'openssh-server': { status: 'active', enabled: true, installed: installedPackages.includes('openssh-server') },
+                'samba': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                'smbd': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                'nmbd': { status: 'inactive', enabled: false, installed: installedPackages.includes('samba') },
+                'isc-dhcp-server': { status: 'inactive', enabled: false, installed: installedPackages.includes('isc-dhcp-server') },
+                'dhcpd': { status: 'inactive', enabled: false, installed: installedPackages.includes('isc-dhcp-server') },
+                'bind9': { status: 'inactive', enabled: false, installed: installedPackages.includes('bind9') },
+                'named': { status: 'inactive', enabled: false, installed: installedPackages.includes('bind9') },
+                'vsftpd': { status: 'inactive', enabled: false, installed: installedPackages.includes('vsftpd') },
+                'apache2': { status: 'inactive', enabled: false, installed: installedPackages.includes('apache2') },
+                'nginx': { status: 'inactive', enabled: false, installed: installedPackages.includes('nginx') },
+                'mysql': { status: 'inactive', enabled: false, installed: installedPackages.includes('mysql-server') },
+                'mariadb': { status: 'inactive', enabled: false, installed: installedPackages.includes('mariadb-server') }
+            };
+            
+            initializeFilesystem();
+        }
+        
+        function initializeFilesystem() {
+            filesystem = {
+                '/': {
+                    type: 'directory',
+                    contents: {
+                        'root': {
+                            type: 'directory',
+                            contents: {
+                                'Desktop': { type: 'directory', contents: {} },
+                                'Documents': { type: 'directory', contents: {} },
+                                'Downloads': { type: 'directory', contents: {} },
+                                'Music': { type: 'directory', contents: {} },
+                                'Pictures': { type: 'directory', contents: {} },
+                                'Videos': { type: 'directory', contents: {} }
+                            }
+                        },
+                        'home': { type: 'directory', contents: {} },
+                        'etc': { 
+                            type: 'directory', 
+                            contents: {
+                                'passwd': { 
+                                    type: 'file', 
+                                    content: generatePasswdFile(),
+                                    size: generatePasswdFile().length
+                                },
+                                'shadow': {
+                                    type: 'file',
+                                    content: 'root:$6$encrypted$hash:18000:0:99999:7:::\n',
+                                    size: 45
+                                },
+                                'hostname': {
+                                    type: 'file',
+                                    content: installationData.hostname || 'debian',
+                                    size: (installationData.hostname || 'debian').length
+                                }
+                            }
+                        },
+                        'var': { type: 'directory', contents: {} },
+                        'usr': { type: 'directory', contents: {} },
+                        'tmp': { type: 'directory', contents: {} }
+                    }
+                }
+            };
+
+            // Initialize home directories for users created during installation
+            if (installationData.username) {
+                filesystem['/'].contents.home.contents[installationData.username] = {
+                    type: 'directory',
+                    contents: {
+                        'Desktop': { type: 'directory', contents: {} },
+                        'Documents': { type: 'directory', contents: {} },
+                        'Downloads': { type: 'directory', contents: {} },
+                        'Music': { type: 'directory', contents: {} },
+                        'Pictures': { type: 'directory', contents: {} },
+                        'Videos': { type: 'directory', contents: {} }
+                    }
+                };
+            }
+        }
+
+        function generatePasswdFile() {
+            let passwdContent = 'root:x:0:0:root:/root:/bin/bash\n';
+            if (installationData.username) {
+                passwdContent += `${installationData.username}:x:1000:1000:${installationData.fullName || installationData.username}:/home/${installationData.username}:/bin/bash\n`;
+            }
+            return passwdContent;
+        }
+
+        function getDirectoryContents(path) {
+            const parts = path.split('/').filter(p => p);
+            let current = filesystem['/'];
+            
+            for (const part of parts) {
+                if (current.contents && current.contents[part]) {
+                    current = current.contents[part];
+                } else {
+                    return null;
+                }
+            }
+            return current;
+        }
+
+        function createDirectory(path, name) {
+            const dir = getDirectoryContents(path);
+            if (dir && dir.type === 'directory') {
+                if (!dir.contents[name]) {
+                    dir.contents[name] = { type: 'directory', contents: {} };
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function removeDirectory(path, name) {
+            const dir = getDirectoryContents(path);
+            if (dir && dir.type === 'directory' && dir.contents[name]) {
+                delete dir.contents[name];
+                return true;
+            }
+            return false;
+        }
+
+        function renameItem(path, oldName, newName) {
+            const dir = getDirectoryContents(path);
+            if (dir && dir.type === 'directory' && dir.contents[oldName] && !dir.contents[newName]) {
+                dir.contents[newName] = dir.contents[oldName];
+                delete dir.contents[oldName];
+                return true;
+            }
+            return false;
+        }
+
+        function executeCommand(cmd) {
+            const hostname = installationData.hostname || 'debian';
+            let output = '';
+            const args = cmd.trim().split(' ');
+            const command = args[0];
+            
+            // Remove the cursor and add newline for command execution
+            const loginContent = document.getElementById('loginContent');
+            const lines = loginContent.innerHTML.split('\n');
+            const lastLine = lines[lines.length - 1];
+            const cleanLastLine = lastLine.replace('<span class="cursor">_</span>', '');
+            lines[lines.length - 1] = cleanLastLine;
+            loginContent.innerHTML = lines.join('\n') + '\n';
+            
+            switch(command) {
+                case 'ls':
+                    const lsDir = getDirectoryContents(currentDirectory);
+                    if (lsDir && lsDir.contents) {
+                        if (args.includes('-la') || args.includes('-l')) {
+                            output = 'total ' + Object.keys(lsDir.contents).length * 4 + '\n';
+                            output += 'drwx------  2 root root 4096 Jan 21 10:30 .\n';
+                            output += 'drwxr-xr-x  3 root root 4096 Jan 21 10:25 ..\n';
+                            for (const [name, item] of Object.entries(lsDir.contents)) {
+                                const type = item.type === 'directory' ? 'd' : '-';
+                                output += `${type}rwx------  2 root root 4096 Jan 21 10:30 ${name}\n`;
+                            }
+                        } else {
+                            const items = Object.keys(lsDir.contents);
+                            output = items.length > 0 ? items.join('  ') : '';
+                        }
+                    } else {
+                        output = 'ls: cannot access directory';
+                    }
+                    break;
+                    
+                case 'pwd':
+                    output = currentDirectory;
+                    break;
+                    
+                case 'cd':
+                    if (args.length === 1) {
+                        currentDirectory = users[currentUser].home;
+                    } else {
+                        let targetPath = args[1];
+                        if (targetPath === '..') {
+                            const parts = currentDirectory.split('/').filter(p => p);
+                            if (parts.length > 1) {
+                                parts.pop();
+                                currentDirectory = '/' + parts.join('/');
+                            } else {
+                                currentDirectory = '/';
+                            }
+                        } else if (targetPath === '.') {
+                            // Stay in current directory
+                        } else if (targetPath.startsWith('/')) {
+                            // Absolute path
+                            const targetDir = getDirectoryContents(targetPath);
+                            if (targetDir && targetDir.type === 'directory') {
+                                currentDirectory = targetPath;
+                            } else {
+                                output = `cd: ${targetPath}: No such file or directory`;
+                            }
+                        } else {
+                            // Relative path
+                            const newPath = currentDirectory === '/' ? '/' + targetPath : currentDirectory + '/' + targetPath;
+                            const targetDir = getDirectoryContents(newPath);
+                            if (targetDir && targetDir.type === 'directory') {
+                                currentDirectory = newPath;
+                            } else {
+                                output = `cd: ${targetPath}: No such file or directory`;
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'mkdir':
+                    if (args.length < 2) {
+                        output = 'mkdir: missing operand\nTry "mkdir --help" for more information.';
+                    } else {
+                        const dirName = args[1];
+                        if (createDirectory(currentDirectory, dirName)) {
+                            // Success, no output
+                        } else {
+                            output = `mkdir: cannot create directory '${dirName}': File exists`;
+                        }
+                    }
+                    break;
+                    
+                case 'whoami':
+                    output = currentUser;
+                    break;
+                    
+                case 'uname':
+                    if (args.includes('-a')) {
+                        output = 'Linux ' + hostname + ' 5.10.0-21-amd64 #1 SMP Debian 5.10.162-1 (2023-01-21) x86_64 GNU/Linux';
+                    } else if (args.includes('-r')) {
+                        output = '5.10.0-21-amd64';
+                    } else {
+                        output = 'Linux';
+                    }
+                    break;
+                    
+                case 'date':
+                    output = new Date().toString();
+                    break;
+                    
+                case 'cat':
+                    if (args.length < 2) {
+                        output = 'cat: missing operand\nTry "cat --help" for more information.';
+                    } else {
+                        const fileName = args[1];
+                        
+                        // Handle special system files
+                        if (fileName === '/etc/debian_version') {
+                            output = '11.6';
+                        } else if (fileName === '/etc/passwd') {
+                            const etcDir = getDirectoryContents('/etc');
+                            if (etcDir && etcDir.contents && etcDir.contents.passwd) {
+                                output = etcDir.contents.passwd.content;
+                            } else {
+                                output = 'root:x:0:0:root:/root:/bin/bash\n';
+                            }
+                        } else if (fileName === '/etc/hostname') {
+                            output = installationData.hostname || 'debian';
+                        } else {
+                            output = `cat: ${fileName}: No such file or directory`;
+                        }
+                    }
+                    break;
+                    
+                case 'clear':
+                    const currentPrompt = getCurrentPrompt();
+                    loginContent.innerHTML = currentPrompt + '<span class="cursor">_</span>';
+                    loginContent.scrollTop = loginContent.scrollHeight;
+                    return;
+                    
+                case 'help':
+                    output = 'Available commands:\nls, pwd, cd, mkdir, whoami, uname, date, cat, clear, help, exit';
+                    break;
+                    
+                case 'exit':
+                    loginContent.innerHTML += 'logout\n\n' + hostname + ' login: <span class="cursor">_</span>';
+                    // Reset login state
+                    loginStep = 'username';
+                    currentUser = 'root';
+                    currentDirectory = '/root';
+                    loginContent.scrollTop = loginContent.scrollHeight;
+                    return;
+                    
+                case '':
+                    break;
+                    
+                default:
+                    output = `${command}: command not found`;
+            }
+            
+            // Add output and new prompt
+            if (output) {
+                loginContent.innerHTML += output + '\n';
+            }
+            const currentPrompt = getCurrentPrompt();
+            loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
+            loginContent.scrollTop = loginContent.scrollHeight;
+        }
+
+        // Mobile support functions
+        function activateMobileInput() {
+            const mobileInput = document.getElementById('mobileInput');
+            const mobileKeyboard = document.getElementById('mobileKeyboard');
+            
+            if (mobileInput && mobileKeyboard) {
+                mobileInput.focus();
+                mobileKeyboard.classList.add('active');
+                mobileKeyboard.textContent = '⌨️ Keyboard Active';
+            }
+        }
+
+        // Touch support for installer
+        function addTouchSupport() {
+            const menuItems = document.querySelectorAll('.menu-item');
+            const buttons = document.querySelectorAll('.button');
+            
+            menuItems.forEach(item => {
+                item.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    this.classList.add('selected');
+                });
+                
+                item.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    // Trigger click after a short delay
+                    setTimeout(() => {
+                        this.click();
+                    }, 100);
+                });
+            });
+            
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    this.style.transform = 'scale(0.98)';
+                });
+                
+                button.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    this.style.transform = '';
+                    // Trigger click after a short delay
+                    setTimeout(() => {
+                        this.click();
+                    }, 100);
+                });
+            });
+        }
+
+        // Virtual keyboard functions
+        function showVirtualKeyboard() {
+            const virtualKeyboard = document.getElementById('virtualKeyboard');
+            const mobileKeyboard = document.getElementById('mobileKeyboard');
+            
+            virtualKeyboard.classList.add('active');
+            mobileKeyboard.classList.add('active');
+            mobileKeyboard.textContent = '⌨️ Hide Keyboard';
+        }
+
+        function hideVirtualKeyboard() {
+            const virtualKeyboard = document.getElementById('virtualKeyboard');
+            const mobileKeyboard = document.getElementById('mobileKeyboard');
+            
+            virtualKeyboard.classList.remove('active');
+            mobileKeyboard.classList.remove('active');
+            mobileKeyboard.textContent = '⌨️ Virtual Keyboard';
+        }
+
+        function setKeyboardMode(mode) {
+            // Hide all keyboard layouts
+            document.getElementById('normalKeyboard').style.display = 'none';
+            document.getElementById('symbolsKeyboard').style.display = 'none';
+            document.getElementById('functionKeyboard').style.display = 'none';
+            
+            // Remove active class from all mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected layout and activate button
+            if (mode === 'normal') {
+                document.getElementById('normalKeyboard').style.display = 'block';
+                document.getElementById('normalMode').classList.add('active');
+            } else if (mode === 'symbols') {
+                document.getElementById('symbolsKeyboard').style.display = 'block';
+                document.getElementById('symbolsMode').classList.add('active');
+            } else if (mode === 'function') {
+                document.getElementById('functionKeyboard').style.display = 'block';
+                document.getElementById('functionMode').classList.add('active');
+            }
+        }
+
+        let shiftActive = false;
+        let ctrlActive = false;
+
+        function toggleShift() {
+            shiftActive = !shiftActive;
+            const shiftKey = document.getElementById('shiftKey');
+            if (shiftActive) {
+                shiftKey.classList.add('active');
+            } else {
+                shiftKey.classList.remove('active');
+            }
+        }
+
+        function toggleCtrl() {
+            ctrlActive = !ctrlActive;
+            const ctrlKeys = document.querySelectorAll('#ctrlKey, #ctrlKeySymbols, #ctrlKeyFunction');
+            ctrlKeys.forEach(key => {
+                if (ctrlActive) {
+                    key.classList.add('active');
+                } else {
+                    key.classList.remove('active');
+                }
+            });
+        }
+
+        function typeKey(key) {
+            let keyToSend = key;
+            
+            // Handle special keys
+            if (key === 'Backspace') {
+                keyToSend = 'Backspace';
+            } else if (key === 'Enter') {
+                keyToSend = 'Enter';
+            } else if (key === ' ') {
+                keyToSend = ' ';
+            } else if (shiftActive && key.length === 1) {
+                keyToSend = key.toUpperCase();
+                shiftActive = false;
+                const shiftKey = document.getElementById('shiftKey');
+                if (shiftKey) shiftKey.classList.remove('active');
+            }
+            
+            // Directly handle the key input for login screen
+            if (document.getElementById('loginScreen').classList.contains('active')) {
+                if (keyToSend === 'Backspace') {
+                    if (inputBuffer.length > 0) {
+                        inputBuffer = inputBuffer.slice(0, -1);
+                        updateLoginDisplay();
+                    }
+                } else if (keyToSend === 'Enter') {
+                    // Simulate Enter key press
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        bubbles: true
+                    });
+                    document.dispatchEvent(enterEvent);
+                } else if (keyToSend.length === 1) {
+                    inputBuffer += keyToSend;
+                    updateLoginDisplay();
+                }
+            } else {
+                // Create and dispatch keyboard event for other screens
+                const event = new KeyboardEvent('keydown', {
+                    key: keyToSend,
+                    ctrlKey: ctrlActive,
+                    bubbles: true
+                });
+                
+                document.dispatchEvent(event);
+            }
+            
+            // Reset ctrl after use
+            if (ctrlActive && key !== 'Ctrl') {
+                ctrlActive = false;
+                document.querySelectorAll('#ctrlKey, #ctrlKeySymbols, #ctrlKeyFunction').forEach(key => {
+                    key.classList.remove('active');
+                });
+            }
+        }
+
+        function updateLoginDisplay() {
+            const loginContent = document.getElementById('loginContent');
+            const lines = loginContent.innerHTML.split('\n');
+            const hostname = installationData.hostname || 'debian';
+            
+            if (loginStep === 'username') {
+                lines[lines.length - 1] = hostname + ' login: ' + inputBuffer + '<span class="cursor">_</span>';
+            } else if (loginStep === 'password') {
+                lines[lines.length - 1] = 'Password: ' + '*'.repeat(inputBuffer.length) + '<span class="cursor">_</span>';
+            } else if (loginStep === 'shell') {
+                const currentPrompt = getCurrentPrompt();
+                lines[lines.length - 1] = currentPrompt + inputBuffer + '<span class="cursor">_</span>';
+            }
+            
+            loginContent.innerHTML = lines.join('\n');
+            loginContent.scrollTop = loginContent.scrollHeight;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize system first
+            initializeSystem();
+            
+            // Start boot sequence
+            startBoot();
+            addTouchSupport();
+            
+            // Mobile detection and setup
+            if (isMobile) {
+                document.getElementById('mobileStatus').style.display = 'block';
+                
+                // Setup mobile keyboard
+                const mobileKeyboard = document.getElementById('mobileKeyboard');
+                if (mobileKeyboard) {
+                    mobileKeyboard.addEventListener('click', function() {
+                        const virtualKeyboard = document.getElementById('virtualKeyboard');
+                        if (virtualKeyboard.classList.contains('active')) {
+                            hideVirtualKeyboard();
+                        } else {
+                            showVirtualKeyboard();
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975da6a8e58bf8e8',t:'MTc1NjMxOTU0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
