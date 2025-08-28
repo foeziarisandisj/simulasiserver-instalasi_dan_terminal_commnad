@@ -182,6 +182,32 @@
             font-size: 16px;
         }
 
+        .practice-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007700;
+            color: #fff;
+            border: 2px solid #00aa00;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1002;
+            display: block;
+            box-shadow: 0 4px 12px rgba(0,119,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .practice-button:hover {
+            background: #009900;
+            border-color: #00cc00;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,119,0,0.4);
+        }
+
         .mobile-keyboard-trigger {
             position: fixed;
             bottom: 20px;
@@ -515,6 +541,215 @@
             padding: 2px 5px;
             margin: 2px 0;
         }
+
+        /* Practice Exercise Popup Styles */
+        .practice-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .practice-popup.active {
+            display: flex;
+        }
+
+        .practice-content {
+            background: #1a1a1a;
+            border: 2px solid #007700;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,119,0,0.3);
+        }
+
+        .practice-header {
+            background: #007700;
+            color: #fff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .practice-header h2 {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+        }
+
+        .practice-close {
+            background: #cc0000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .practice-close:hover {
+            background: #ff0000;
+        }
+
+        .practice-tabs {
+            display: flex;
+            background: #2a2a2a;
+            border-bottom: 2px solid #007700;
+        }
+
+        .exercise-btn {
+            flex: 1;
+            background: #2a2a2a;
+            color: #ccc;
+            border: none;
+            padding: 15px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-right: 1px solid #444;
+        }
+
+        .exercise-btn:last-child {
+            border-right: none;
+        }
+
+        .exercise-btn:hover {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .exercise-btn.active {
+            background: #007700;
+            color: #fff;
+        }
+
+        .practice-body {
+            padding: 20px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .exercise-content {
+            display: none;
+        }
+
+        .exercise-content.active {
+            display: block;
+        }
+
+        .exercise-content h3 {
+            color: #00ff00;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .exercise-content p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .tree-structure {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .tree-structure h4 {
+            color: #00aa00;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .tree-structure pre {
+            color: #fff;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .commands-needed {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .commands-needed h4 {
+            color: #00aa00;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .commands-needed ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .commands-needed li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        .commands-needed code {
+            background: #333;
+            color: #00ff00;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .practice-button {
+                top: 10px;
+                right: 10px;
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .practice-content {
+                margin: 10px;
+                max-height: 95vh;
+            }
+            
+            .practice-header h2 {
+                font-size: 16px;
+            }
+            
+            .exercise-btn {
+                padding: 12px 15px;
+                font-size: 12px;
+            }
+            
+            .practice-body {
+                padding: 15px;
+            }
+            
+            .tree-structure pre {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -830,11 +1065,117 @@
         <input type="text" id="mobileInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
 
+    <!-- Practice Exercise Button -->
+    <button id="practiceButton" class="practice-button">📚 Tugas Latihan</button>
+
     <!-- Mobile Keyboard Trigger Button -->
     <button id="mobileKeyboard" class="mobile-keyboard-trigger">⌨️ Virtual Keyboard</button>
     
     <!-- Mobile Status Indicator -->
     <div id="mobileStatus" class="mobile-status">Mobile Mode</div>
+
+    <!-- Practice Exercise Popup -->
+    <div id="practicePopup" class="practice-popup">
+        <div class="practice-content">
+            <div class="practice-header">
+                <h2>📚 Tugas Latihan Terminal Debian</h2>
+                <button class="practice-close" onclick="closePracticePopup()">✕</button>
+            </div>
+            
+            <div class="practice-tabs">
+                <button class="exercise-btn active" id="ex1" onclick="selectExercise(1)">Latihan 1</button>
+                <button class="exercise-btn" id="ex2" onclick="selectExercise(2)">Latihan 2</button>
+                <button class="exercise-btn" id="ex3" onclick="selectExercise(3)">Latihan 3</button>
+            </div>
+            
+            <div class="practice-body">
+                <!-- Exercise 1 -->
+                <div class="exercise-content active" id="exercise1">
+                    <h3>🎯 Latihan 1: Struktur Direktori Dasar</h3>
+                    <p><strong>Tujuan:</strong> Membuat struktur folder project dengan subfolder dan file</p>
+                    
+                    <div class="tree-structure">
+                        <h4>📁 Struktur yang harus dibuat:</h4>
+                        <pre>project/
+├── 📁 src/
+│   ├── 📄 main.py
+│   └── 📄 utils.py
+├── 📁 docs/
+│   └── 📄 README.md
+└── 📁 tests/
+    └── 📄 test_main.py</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🔧 Perintah yang diperlukan:</h4>
+                        <ul>
+                            <li><code>mkdir</code> - membuat direktori</li>
+                            <li><code>cd</code> - pindah direktori</li>
+                            <li><code>touch</code> - membuat file kosong</li>
+                            <li><code>tree</code> - melihat struktur folder</li>
+                            <li><code>ls</code> - melihat isi direktori</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Exercise 2 -->
+                <div class="exercise-content" id="exercise2">
+                    <h3>👤 Latihan 2: Manajemen User dan Permission</h3>
+                    <p><strong>Tujuan:</strong> Membuat user baru dan mengatur permission file</p>
+                    
+                    <div class="tree-structure">
+                        <h4>📁 Struktur yang harus dibuat:</h4>
+                        <pre>developer_workspace/
+├── 📁 private/ (permission 700)
+│   └── 📄 secret.txt (permission 600)
+├── 📁 shared/ (permission 755)
+│   └── 📄 config.txt (permission 644)
+└── 📄 readme.txt (permission 644)</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🔧 Perintah yang diperlukan:</h4>
+                        <ul>
+                            <li><code>useradd developer</code> - membuat user baru</li>
+                            <li><code>chmod 700</code> - mengatur permission folder</li>
+                            <li><code>chmod 644</code> - mengatur permission file</li>
+                            <li><code>chown developer</code> - mengubah kepemilikan</li>
+                            <li><code>ls -l</code> - melihat permission detail</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Exercise 3 -->
+                <div class="exercise-content" id="exercise3">
+                    <h3>📂 Latihan 3: Operasi File Lanjutan</h3>
+                    <p><strong>Tujuan:</strong> Copy, move file dan membuat konten</p>
+                    
+                    <div class="tree-structure">
+                        <h4>📁 Struktur yang harus dibuat:</h4>
+                        <pre>workspace/
+├── 📁 original/
+│   ├── 📄 data.txt (isi: "Hello World")
+│   └── 📄 config.ini
+├── 📁 backup/
+│   └── 📄 data_backup.txt (copy dari data.txt)
+└── 📁 archive/
+    └── 📄 old_config.ini (moved dari config.ini)</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🔧 Perintah yang diperlukan:</h4>
+                        <ul>
+                            <li><code>nano data.txt</code> - edit file dengan konten</li>
+                            <li><code>cp</code> - copy file</li>
+                            <li><code>mv</code> - move/rename file</li>
+                            <li><code>cat</code> - melihat isi file</li>
+                            <li><code>tree</code> - verifikasi struktur</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Virtual Keyboard -->
     <div id="virtualKeyboard" class="virtual-keyboard">
@@ -2581,6 +2922,33 @@ ${hostname} login: <span class="cursor">_</span>`;
             }, 10);
         }
 
+        // Practice exercise functions
+        function showPracticePopup() {
+            const practicePopup = document.getElementById('practicePopup');
+            practicePopup.classList.add('active');
+        }
+
+        function closePracticePopup() {
+            const practicePopup = document.getElementById('practicePopup');
+            practicePopup.classList.remove('active');
+        }
+
+        function selectExercise(exerciseNum) {
+            // Remove active class from all exercise buttons
+            document.querySelectorAll('.exercise-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Remove active class from all exercise content
+            document.querySelectorAll('.exercise-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Add active class to selected button and content
+            document.getElementById(`ex${exerciseNum}`).classList.add('active');
+            document.getElementById(`exercise${exerciseNum}`).classList.add('active');
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize system first
@@ -2589,6 +2957,12 @@ ${hostname} login: <span class="cursor">_</span>`;
             // Start boot sequence
             startBoot();
             addTouchSupport();
+            
+            // Setup practice button
+            const practiceButton = document.getElementById('practiceButton');
+            if (practiceButton) {
+                practiceButton.addEventListener('click', showPracticePopup);
+            }
             
             // Mobile detection and setup
             if (isMobile) {
@@ -2632,5 +3006,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fe7d5b177ff89',t:'MTc1NjM0MzE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97600fa1d3c9d7ad',t:'MTc1NjM0NDgxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
