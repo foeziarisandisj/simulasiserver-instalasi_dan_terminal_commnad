@@ -1570,42 +1570,60 @@ ${hostname} login: <span class="cursor">_</span>`;
             filesystem = {
                 '/': {
                     type: 'directory',
+                    permissions: '755',
+                    owner: 'root',
+                    group: 'root',
                     contents: {
                         'root': {
                             type: 'directory',
+                            permissions: '700',
+                            owner: 'root',
+                            group: 'root',
                             contents: {
-                                'Desktop': { type: 'directory', contents: {} },
-                                'Documents': { type: 'directory', contents: {} },
-                                'Downloads': { type: 'directory', contents: {} },
-                                'Music': { type: 'directory', contents: {} },
-                                'Pictures': { type: 'directory', contents: {} },
-                                'Videos': { type: 'directory', contents: {} }
+                                'Desktop': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                                'Documents': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                                'Downloads': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                                'Music': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                                'Pictures': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                                'Videos': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} }
                             }
                         },
-                        'home': { type: 'directory', contents: {} },
+                        'home': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
                         'etc': { 
-                            type: 'directory', 
+                            type: 'directory',
+                            permissions: '755',
+                            owner: 'root',
+                            group: 'root',
                             contents: {
                                 'passwd': { 
-                                    type: 'file', 
+                                    type: 'file',
+                                    permissions: '644',
+                                    owner: 'root',
+                                    group: 'root',
                                     content: generatePasswdFile(),
                                     size: generatePasswdFile().length
                                 },
                                 'shadow': {
                                     type: 'file',
+                                    permissions: '640',
+                                    owner: 'root',
+                                    group: 'shadow',
                                     content: 'root:$6$encrypted$hash:18000:0:99999:7:::\n',
                                     size: 45
                                 },
                                 'hostname': {
                                     type: 'file',
+                                    permissions: '644',
+                                    owner: 'root',
+                                    group: 'root',
                                     content: installationData.hostname || 'debian',
                                     size: (installationData.hostname || 'debian').length
                                 }
                             }
                         },
-                        'var': { type: 'directory', contents: {} },
-                        'usr': { type: 'directory', contents: {} },
-                        'tmp': { type: 'directory', contents: {} }
+                        'var': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                        'usr': { type: 'directory', permissions: '755', owner: 'root', group: 'root', contents: {} },
+                        'tmp': { type: 'directory', permissions: '1777', owner: 'root', group: 'root', contents: {} }
                     }
                 }
             };
@@ -1614,13 +1632,16 @@ ${hostname} login: <span class="cursor">_</span>`;
             if (installationData.username) {
                 filesystem['/'].contents.home.contents[installationData.username] = {
                     type: 'directory',
+                    permissions: '755',
+                    owner: installationData.username,
+                    group: installationData.username,
                     contents: {
-                        'Desktop': { type: 'directory', contents: {} },
-                        'Documents': { type: 'directory', contents: {} },
-                        'Downloads': { type: 'directory', contents: {} },
-                        'Music': { type: 'directory', contents: {} },
-                        'Pictures': { type: 'directory', contents: {} },
-                        'Videos': { type: 'directory', contents: {} }
+                        'Desktop': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} },
+                        'Documents': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} },
+                        'Downloads': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} },
+                        'Music': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} },
+                        'Pictures': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} },
+                        'Videos': { type: 'directory', permissions: '755', owner: installationData.username, group: installationData.username, contents: {} }
                     }
                 };
             }
@@ -1652,9 +1673,34 @@ ${hostname} login: <span class="cursor">_</span>`;
             const dir = getDirectoryContents(path);
             if (dir && dir.type === 'directory') {
                 if (!dir.contents[name]) {
-                    dir.contents[name] = { type: 'directory', contents: {} };
+                    dir.contents[name] = { 
+                        type: 'directory', 
+                        permissions: '755',
+                        owner: currentUser,
+                        group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                        contents: {} 
+                    };
                     return true;
                 }
+            }
+            return false;
+        }
+
+        function createFile(path, name, content = '') {
+            const dir = getDirectoryContents(path);
+            if (dir && dir.type === 'directory') {
+                if (!hasWritePermission(dir)) {
+                    return false;
+                }
+                dir.contents[name] = {
+                    type: 'file',
+                    permissions: '644',
+                    owner: currentUser,
+                    group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                    content: content,
+                    size: content.length
+                };
+                return true;
             }
             return false;
         }
@@ -1662,20 +1708,275 @@ ${hostname} login: <span class="cursor">_</span>`;
         function removeDirectory(path, name) {
             const dir = getDirectoryContents(path);
             if (dir && dir.type === 'directory' && dir.contents[name]) {
+                const target = dir.contents[name];
+                if (target.type === 'directory' && Object.keys(target.contents).length > 0) {
+                    return false; // Directory not empty
+                }
+                if (!hasWritePermission(dir)) {
+                    return false;
+                }
                 delete dir.contents[name];
                 return true;
             }
             return false;
         }
 
+        function removeItem(path, name, recursive = false) {
+            const dir = getDirectoryContents(path);
+            if (!dir || dir.type !== 'directory' || !dir.contents[name]) {
+                return `rm: cannot remove '${name}': No such file or directory`;
+            }
+            
+            if (!hasWritePermission(dir)) {
+                return `rm: cannot remove '${name}': Permission denied`;
+            }
+            
+            const target = dir.contents[name];
+            if (target.type === 'directory' && !recursive) {
+                return `rm: cannot remove '${name}': Is a directory`;
+            }
+            
+            delete dir.contents[name];
+            return true;
+        }
+
         function renameItem(path, oldName, newName) {
             const dir = getDirectoryContents(path);
             if (dir && dir.type === 'directory' && dir.contents[oldName] && !dir.contents[newName]) {
+                if (!hasWritePermission(dir)) {
+                    return false;
+                }
                 dir.contents[newName] = dir.contents[oldName];
                 delete dir.contents[oldName];
                 return true;
             }
             return false;
+        }
+
+        function copyItem(source, dest) {
+            // Handle absolute and relative paths
+            const sourcePath = source.startsWith('/') ? source : currentDirectory + '/' + source;
+            const destPath = dest.startsWith('/') ? dest : currentDirectory + '/' + dest;
+            
+            const sourceItem = getDirectoryContents(sourcePath);
+            if (!sourceItem) {
+                return `cp: cannot stat '${source}': No such file or directory`;
+            }
+            
+            if (!hasReadPermission(sourceItem)) {
+                return `cp: cannot open '${source}' for reading: Permission denied`;
+            }
+            
+            // Get destination directory and filename
+            const destParts = destPath.split('/');
+            const destName = destParts.pop();
+            const destDir = destParts.join('/') || '/';
+            const destDirObj = getDirectoryContents(destDir);
+            
+            if (!destDirObj || destDirObj.type !== 'directory') {
+                return `cp: cannot create regular file '${dest}': No such file or directory`;
+            }
+            
+            if (!hasWritePermission(destDirObj)) {
+                return `cp: cannot create regular file '${dest}': Permission denied`;
+            }
+            
+            // Create copy
+            destDirObj.contents[destName] = {
+                type: sourceItem.type,
+                permissions: sourceItem.permissions,
+                owner: currentUser,
+                group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                content: sourceItem.content || '',
+                size: sourceItem.size || 0,
+                contents: sourceItem.type === 'directory' ? JSON.parse(JSON.stringify(sourceItem.contents)) : undefined
+            };
+            
+            return true;
+        }
+
+        function moveItem(source, dest) {
+            const result = copyItem(source, dest);
+            if (result === true) {
+                // Remove source after successful copy
+                const sourcePath = source.startsWith('/') ? source : currentDirectory + '/' + source;
+                const sourceParts = sourcePath.split('/');
+                const sourceName = sourceParts.pop();
+                const sourceDir = sourceParts.join('/') || '/';
+                const sourceDirObj = getDirectoryContents(sourceDir);
+                
+                if (sourceDirObj && hasWritePermission(sourceDirObj)) {
+                    delete sourceDirObj.contents[sourceName];
+                }
+            }
+            return result;
+        }
+
+        function changePermissions(path, target, mode) {
+            const targetPath = target.startsWith('/') ? target : path + '/' + target;
+            const item = getDirectoryContents(targetPath);
+            
+            if (!item) {
+                return false;
+            }
+            
+            if (currentUser !== 'root' && item.owner !== currentUser) {
+                return false;
+            }
+            
+            // Simple permission validation (should be 3 or 4 digits)
+            if (/^[0-7]{3,4}$/.test(mode)) {
+                item.permissions = mode;
+                return true;
+            }
+            
+            return false;
+        }
+
+        function changeOwnership(path, target, owner) {
+            const targetPath = target.startsWith('/') ? target : path + '/' + target;
+            const item = getDirectoryContents(targetPath);
+            
+            if (!item || !users[owner]) {
+                return false;
+            }
+            
+            item.owner = owner;
+            item.group = users[owner].groups[0];
+            return true;
+        }
+
+        function hasReadPermission(item) {
+            if (currentUser === 'root') return true;
+            if (item.owner === currentUser) {
+                return parseInt(item.permissions[0]) >= 4;
+            }
+            // Simplified group/other permission check
+            return parseInt(item.permissions[2]) >= 4;
+        }
+
+        function hasWritePermission(item) {
+            if (currentUser === 'root') return true;
+            if (item.owner === currentUser) {
+                return parseInt(item.permissions[0]) >= 6;
+            }
+            // Simplified group/other permission check
+            return parseInt(item.permissions[2]) >= 6;
+        }
+
+        function hasExecutePermission(item) {
+            if (currentUser === 'root') return true;
+            if (item.owner === currentUser) {
+                return parseInt(item.permissions[0]) % 2 === 1;
+            }
+            // Simplified group/other permission check
+            return parseInt(item.permissions[2]) % 2 === 1;
+        }
+
+        function generateTreeOutput(path, dir, prefix = '', isLast = true) {
+            let output = path + '\n';
+            const items = Object.entries(dir.contents);
+            
+            items.forEach(([name, item], index) => {
+                const isLastItem = index === items.length - 1;
+                const connector = isLastItem ? '└── ' : '├── ';
+                const icon = item.type === 'directory' ? '📁 ' : '📄 ';
+                
+                output += prefix + connector + icon + name + '\n';
+                
+                if (item.type === 'directory' && Object.keys(item.contents).length > 0) {
+                    const newPrefix = prefix + (isLastItem ? '    ' : '│   ');
+                    const subTree = generateTreeOutput('', item, newPrefix, isLastItem);
+                    output += subTree.split('\n').slice(1).join('\n') + '\n';
+                }
+            });
+            
+            return output.trim();
+        }
+
+        function openNanoEditor(fileName) {
+            const filePath = fileName.startsWith('/') ? fileName : currentDirectory + '/' + fileName;
+            const item = getDirectoryContents(filePath);
+            
+            // Hide login screen
+            document.getElementById('loginScreen').classList.remove('active');
+            
+            // Show nano editor
+            const nanoEditor = document.getElementById('nanoEditor');
+            const nanoTextarea = document.getElementById('nanoTextarea');
+            const nanoFilename = document.getElementById('nanoFilename');
+            
+            nanoEditor.classList.add('active');
+            nanoFilename.textContent = fileName;
+            
+            // Load file content if exists
+            if (item && item.type === 'file') {
+                nanoTextarea.value = item.content || '';
+            } else {
+                nanoTextarea.value = '';
+            }
+            
+            nanoTextarea.focus();
+            
+            // Store current file info for saving
+            window.currentNanoFile = {
+                path: filePath,
+                name: fileName,
+                isNew: !item
+            };
+        }
+
+        function saveNanoFile() {
+            if (!window.currentNanoFile) return;
+            
+            const content = document.getElementById('nanoTextarea').value;
+            const filePath = window.currentNanoFile.path;
+            const parts = filePath.split('/');
+            const fileName = parts.pop();
+            const dirPath = parts.join('/') || '/';
+            
+            const dir = getDirectoryContents(dirPath);
+            if (dir && dir.type === 'directory') {
+                if (hasWritePermission(dir)) {
+                    dir.contents[fileName] = {
+                        type: 'file',
+                        permissions: '644',
+                        owner: currentUser,
+                        group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                        content: content,
+                        size: content.length
+                    };
+                    showNanoStatus('File saved successfully');
+                } else {
+                    showNanoStatus('Error: Permission denied');
+                }
+            }
+        }
+
+        function exitNanoEditor() {
+            document.getElementById('nanoEditor').classList.remove('active');
+            document.getElementById('loginScreen').classList.add('active');
+            window.currentNanoFile = null;
+            
+            // Restore cursor
+            const loginContent = document.getElementById('loginContent');
+            const currentPrompt = getCurrentPrompt();
+            loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
+        }
+
+        function showNanoStatus(message) {
+            const nanoStatus = document.getElementById('nanoStatus');
+            nanoStatus.textContent = message;
+            nanoStatus.style.display = 'block';
+            setTimeout(() => {
+                nanoStatus.style.display = 'none';
+            }, 2000);
+        }
+
+        function formatPermissions(octal) {
+            const perms = ['---', '--x', '-w-', '-wx', 'r--', 'r-x', 'rw-', 'rwx'];
+            const digits = octal.toString().padStart(3, '0');
+            return digits.split('').map(d => perms[parseInt(d)]).join('');
         }
 
         function executeCommand(cmd) {
@@ -1696,13 +1997,30 @@ ${hostname} login: <span class="cursor">_</span>`;
                 case 'ls':
                     const lsDir = getDirectoryContents(currentDirectory);
                     if (lsDir && lsDir.contents) {
+                        if (!hasReadPermission(lsDir)) {
+                            output = 'ls: cannot open directory: Permission denied';
+                            break;
+                        }
+                        
                         if (args.includes('-la') || args.includes('-l')) {
                             output = 'total ' + Object.keys(lsDir.contents).length * 4 + '\n';
-                            output += 'drwx------  2 root root 4096 Jan 21 10:30 .\n';
-                            output += 'drwxr-xr-x  3 root root 4096 Jan 21 10:25 ..\n';
+                            
+                            // Add . and .. entries
+                            const currentPerms = lsDir.permissions || '755';
+                            const parentDir = currentDirectory === '/' ? '/' : currentDirectory.split('/').slice(0, -1).join('/') || '/';
+                            const parentDirObj = getDirectoryContents(parentDir);
+                            const parentPerms = parentDirObj ? (parentDirObj.permissions || '755') : '755';
+                            
+                            output += `d${formatPermissions(currentPerms)}  2 ${lsDir.owner || 'root'} ${lsDir.group || 'root'} 4096 Jan 21 10:30 .\n`;
+                            output += `d${formatPermissions(parentPerms)}  3 root root 4096 Jan 21 10:25 ..\n`;
+                            
                             for (const [name, item] of Object.entries(lsDir.contents)) {
                                 const type = item.type === 'directory' ? 'd' : '-';
-                                output += `${type}rwx------  2 root root 4096 Jan 21 10:30 ${name}\n`;
+                                const perms = formatPermissions(item.permissions || '644');
+                                const owner = item.owner || 'root';
+                                const group = item.group || 'root';
+                                const size = item.size || 4096;
+                                output += `${type}${perms}  2 ${owner} ${group} ${size} Jan 21 10:30 ${name}\n`;
                             }
                         } else {
                             const items = Object.keys(lsDir.contents);
@@ -1736,7 +2054,11 @@ ${hostname} login: <span class="cursor">_</span>`;
                             // Absolute path
                             const targetDir = getDirectoryContents(targetPath);
                             if (targetDir && targetDir.type === 'directory') {
-                                currentDirectory = targetPath;
+                                if (!hasExecutePermission(targetDir)) {
+                                    output = `cd: ${targetPath}: Permission denied`;
+                                } else {
+                                    currentDirectory = targetPath;
+                                }
                             } else {
                                 output = `cd: ${targetPath}: No such file or directory`;
                             }
@@ -1745,7 +2067,11 @@ ${hostname} login: <span class="cursor">_</span>`;
                             const newPath = currentDirectory === '/' ? '/' + targetPath : currentDirectory + '/' + targetPath;
                             const targetDir = getDirectoryContents(newPath);
                             if (targetDir && targetDir.type === 'directory') {
-                                currentDirectory = newPath;
+                                if (!hasExecutePermission(targetDir)) {
+                                    output = `cd: ${targetPath}: Permission denied`;
+                                } else {
+                                    currentDirectory = newPath;
+                                }
                             } else {
                                 output = `cd: ${targetPath}: No such file or directory`;
                             }
@@ -1789,14 +2115,25 @@ ${hostname} login: <span class="cursor">_</span>`;
                         output = 'cat: missing operand\nTry "cat --help" for more information.';
                     } else {
                         const fileName = args[1];
+                        const filePath = fileName.startsWith('/') ? fileName : currentDirectory + '/' + fileName;
+                        const fileItem = getDirectoryContents(filePath);
                         
-                        // Handle special system files
-                        if (fileName === '/etc/debian_version') {
+                        if (fileItem && fileItem.type === 'file') {
+                            if (!hasReadPermission(fileItem)) {
+                                output = `cat: ${fileName}: Permission denied`;
+                            } else {
+                                output = fileItem.content || '';
+                            }
+                        } else if (fileName === '/etc/debian_version') {
                             output = '11.6';
                         } else if (fileName === '/etc/passwd') {
                             const etcDir = getDirectoryContents('/etc');
                             if (etcDir && etcDir.contents && etcDir.contents.passwd) {
-                                output = etcDir.contents.passwd.content;
+                                if (!hasReadPermission(etcDir.contents.passwd)) {
+                                    output = `cat: ${fileName}: Permission denied`;
+                                } else {
+                                    output = etcDir.contents.passwd.content;
+                                }
                             } else {
                                 output = 'root:x:0:0:root:/root:/bin/bash\n';
                             }
@@ -1815,7 +2152,187 @@ ${hostname} login: <span class="cursor">_</span>`;
                     return;
                     
                 case 'help':
-                    output = 'Available commands:\nls, pwd, cd, mkdir, whoami, uname, date, cat, clear, help, exit';
+                    output = 'Available commands:\n' +
+                           'File operations: ls, pwd, cd, mkdir, touch, nano, cat, tree, cp, mv, rm, rmdir\n' +
+                           'User management: whoami, useradd, userdel, passwd\n' +
+                           'Permissions: chmod, chown\n' +
+                           'System: uname, date, clear, help, exit';
+                    break;
+                    
+                case 'tree':
+                    const treeDir = args.length > 1 ? args[1] : currentDirectory;
+                    const targetDir = getDirectoryContents(treeDir);
+                    if (targetDir && targetDir.type === 'directory') {
+                        output = generateTreeOutput(treeDir, targetDir);
+                    } else {
+                        output = `tree: ${treeDir}: No such file or directory`;
+                    }
+                    break;
+                    
+                case 'touch':
+                    if (args.length < 2) {
+                        output = 'touch: missing file operand\nTry "touch --help" for more information.';
+                    } else {
+                        const fileName = args[1];
+                        if (createFile(currentDirectory, fileName, '')) {
+                            // Success, no output
+                        } else {
+                            output = `touch: cannot touch '${fileName}': Permission denied`;
+                        }
+                    }
+                    break;
+                    
+                case 'nano':
+                    if (args.length < 2) {
+                        output = 'nano: missing file operand\nTry "nano --help" for more information.';
+                    } else {
+                        const fileName = args[1];
+                        openNanoEditor(fileName);
+                        return;
+                    }
+                    break;
+                    
+                case 'useradd':
+                    if (currentUser !== 'root') {
+                        output = 'useradd: Permission denied';
+                    } else if (args.length < 2) {
+                        output = 'useradd: missing username\nTry "useradd --help" for more information.';
+                    } else {
+                        const username = args[1];
+                        if (users[username]) {
+                            output = `useradd: user '${username}' already exists`;
+                        } else {
+                            const uid = Object.keys(users).length + 1000;
+                            users[username] = {
+                                password: 'password123',
+                                home: `/home/${username}`,
+                                shell: '/bin/bash',
+                                uid: uid,
+                                gid: uid,
+                                groups: [username, 'users']
+                            };
+                            createDirectory('/home', username);
+                            output = `User '${username}' created successfully. Default password: password123`;
+                        }
+                    }
+                    break;
+                    
+                case 'userdel':
+                    if (currentUser !== 'root') {
+                        output = 'userdel: Permission denied';
+                    } else if (args.length < 2) {
+                        output = 'userdel: missing username\nTry "userdel --help" for more information.';
+                    } else {
+                        const username = args[1];
+                        if (!users[username]) {
+                            output = `userdel: user '${username}' does not exist`;
+                        } else if (username === 'root') {
+                            output = 'userdel: cannot remove root user';
+                        } else {
+                            delete users[username];
+                            removeDirectory('/home', username);
+                            output = `User '${username}' deleted successfully`;
+                        }
+                    }
+                    break;
+                    
+                case 'passwd':
+                    const targetUser = args.length > 1 ? args[1] : currentUser;
+                    if (currentUser !== 'root' && targetUser !== currentUser) {
+                        output = 'passwd: Permission denied';
+                    } else if (!users[targetUser]) {
+                        output = `passwd: user '${targetUser}' does not exist`;
+                    } else {
+                        const newPassword = prompt(`Enter new password for ${targetUser}:`);
+                        if (newPassword) {
+                            users[targetUser].password = newPassword;
+                            output = `Password for '${targetUser}' changed successfully`;
+                        } else {
+                            output = 'Password change cancelled';
+                        }
+                    }
+                    break;
+                    
+                case 'chmod':
+                    if (args.length < 3) {
+                        output = 'chmod: missing operand\nUsage: chmod [mode] [file/directory]';
+                    } else {
+                        const mode = args[1];
+                        const target = args[2];
+                        if (changePermissions(currentDirectory, target, mode)) {
+                            // Success, no output
+                        } else {
+                            output = `chmod: cannot access '${target}': No such file or directory`;
+                        }
+                    }
+                    break;
+                    
+                case 'chown':
+                    if (currentUser !== 'root') {
+                        output = 'chown: Permission denied';
+                    } else if (args.length < 3) {
+                        output = 'chown: missing operand\nUsage: chown [user] [file/directory]';
+                    } else {
+                        const owner = args[1];
+                        const target = args[2];
+                        if (changeOwnership(currentDirectory, target, owner)) {
+                            // Success, no output
+                        } else {
+                            output = `chown: cannot access '${target}': No such file or directory`;
+                        }
+                    }
+                    break;
+                    
+                case 'cp':
+                    if (args.length < 3) {
+                        output = 'cp: missing operand\nUsage: cp [source] [destination]';
+                    } else {
+                        const source = args[1];
+                        const dest = args[2];
+                        const result = copyItem(source, dest);
+                        if (result !== true) {
+                            output = result;
+                        }
+                    }
+                    break;
+                    
+                case 'mv':
+                    if (args.length < 3) {
+                        output = 'mv: missing operand\nUsage: mv [source] [destination]';
+                    } else {
+                        const source = args[1];
+                        const dest = args[2];
+                        const result = moveItem(source, dest);
+                        if (result !== true) {
+                            output = result;
+                        }
+                    }
+                    break;
+                    
+                case 'rm':
+                    if (args.length < 2) {
+                        output = 'rm: missing operand\nTry "rm --help" for more information.';
+                    } else {
+                        const target = args[1];
+                        const recursive = args.includes('-r') || args.includes('-rf');
+                        const result = removeItem(currentDirectory, target, recursive);
+                        if (result !== true) {
+                            output = result;
+                        }
+                    }
+                    break;
+                    
+                case 'rmdir':
+                    if (args.length < 2) {
+                        output = 'rmdir: missing operand\nTry "rmdir --help" for more information.';
+                    } else {
+                        const target = args[1];
+                        if (removeDirectory(currentDirectory, target)) {
+                            // Success, no output
+                        } else {
+                            output = `rmdir: failed to remove '${target}': Directory not empty or does not exist`;
+                        }
+                    }
                     break;
                     
                 case 'exit':
@@ -2090,7 +2607,30 @@ ${hostname} login: <span class="cursor">_</span>`;
                     });
                 }
             }
+            
+            // Add nano editor keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                const nanoEditor = document.getElementById('nanoEditor');
+                if (nanoEditor.classList.contains('active')) {
+                    if (e.ctrlKey) {
+                        switch(e.key.toLowerCase()) {
+                            case 'o': // Write Out (Save)
+                                e.preventDefault();
+                                saveNanoFile();
+                                break;
+                            case 'x': // Exit
+                                e.preventDefault();
+                                exitNanoEditor();
+                                break;
+                            case 'g': // Help
+                                e.preventDefault();
+                                showNanoStatus('Ctrl+O: Save, Ctrl+X: Exit, Ctrl+G: Help');
+                                break;
+                        }
+                    }
+                }
+            });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fc041b722ce0d',t:'MTc1NjM0MTU2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fe7d5b177ff89',t:'MTc1NjM0MzE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
