@@ -1056,7 +1056,7 @@
     </div>
 
     <!-- Practice Exercise Button -->
-    <button id="practiceButton" class="practice-button">📚 Tugas-Latihan</button>
+    <button id="practiceButton" class="practice-button">📚 Tugas Latihan</button>
 
     <!-- Mobile Keyboard Trigger Button -->
     <button id="mobileKeyboard" class="mobile-keyboard-trigger">⌨️ Virtual Keyboard</button>
@@ -1232,7 +1232,7 @@
                 </div>
                 <div class="keyboard-row">
                     <div class="keyboard-key ctrl" onclick="toggleCtrl()" id="ctrlKey">Ctrl</div>
-                    <div class="keyboard-key special" onclick="typeKey('/')/">/</div>
+                    <div class="keyboard-key special" onclick="typeKey('/')">/</div>
                     <div class="keyboard-key space" onclick="typeKey(' ')">Space</div>
                     <div class="keyboard-key special" onclick="typeKey('-')">-</div>
                     <div class="keyboard-key special" onclick="typeKey('.')">.</div>
@@ -1279,7 +1279,7 @@
                 </div>
                 <div class="keyboard-row">
                     <div class="keyboard-key ctrl" onclick="toggleCtrl()" id="ctrlKeySymbols">Ctrl</div>
-                    <div class="keyboard-key special" onclick="typeKey('/')/">/</div>
+                    <div class="keyboard-key special" onclick="typeKey('/')">/</div>
                     <div class="keyboard-key space" onclick="typeKey(' ')">Space</div>
                     <div class="keyboard-key special" onclick="typeKey('-')">-</div>
                     <div class="keyboard-key extra-wide special" onclick="typeKey('Enter')">↵</div>
@@ -1781,7 +1781,7 @@
                 credentialsInfo += `${installationData.username} / ${users[installationData.username].password}\n`;
             }
             
-            const loginText = `Debian GNU/Linux 12 ${hostname} tty1
+            const loginText = `Debian GNU/Linux 11 ${hostname} tty1
 ${credentialsInfo}
 ${hostname} login: <span class="cursor">_</span>`;
             
@@ -2084,12 +2084,56 @@ ${hostname} login: <span class="cursor">_</span>`;
             return false;
         }
 
-        function copyItem(source, dest) {
-            // Handle absolute and relative paths
-            const sourcePath = source.startsWith('/') ? source : currentDirectory + '/' + source;
-            const destPath = dest.startsWith('/') ? dest : currentDirectory + '/' + dest;
+        function resolvePath(path) {
+            if (path.startsWith('/')) {
+                return path; // Absolute path
+            } else {
+                return currentDirectory === '/' ? '/' + path : currentDirectory + '/' + path;
+            }
+        }
+
+        function createDirectoryPath(path, createParents = false) {
+            const fullPath = resolvePath(path);
+            const parts = fullPath.split('/').filter(p => p);
+            let currentPath = '/';
             
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const targetPath = currentPath === '/' ? '/' + part : currentPath + '/' + part;
+                const existing = getDirectoryContents(targetPath);
+                
+                if (!existing) {
+                    // Create directory
+                    const parentDir = getDirectoryContents(currentPath);
+                    if (!parentDir || parentDir.type !== 'directory') {
+                        return `mkdir: cannot create directory '${path}': No such file or directory`;
+                    }
+                    
+                    if (!hasWritePermission(parentDir)) {
+                        return `mkdir: cannot create directory '${path}': Permission denied`;
+                    }
+                    
+                    parentDir.contents[part] = {
+                        type: 'directory',
+                        permissions: '755',
+                        owner: currentUser,
+                        group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                        contents: {}
+                    };
+                } else if (existing.type !== 'directory') {
+                    return `mkdir: cannot create directory '${path}': File exists`;
+                }
+                
+                currentPath = targetPath;
+            }
+            
+            return true;
+        }
+
+        function copyItemAdvanced(source, dest, recursive = false) {
+            const sourcePath = resolvePath(source);
             const sourceItem = getDirectoryContents(sourcePath);
+            
             if (!sourceItem) {
                 return `cp: cannot stat '${source}': No such file or directory`;
             }
@@ -2098,18 +2142,32 @@ ${hostname} login: <span class="cursor">_</span>`;
                 return `cp: cannot open '${source}' for reading: Permission denied`;
             }
             
+            if (sourceItem.type === 'directory' && !recursive) {
+                return `cp: -r not specified; omitting directory '${source}'`;
+            }
+            
+            const destPath = resolvePath(dest);
+            let finalDestPath = destPath;
+            
+            // Check if destination is an existing directory
+            const destItem = getDirectoryContents(destPath);
+            if (destItem && destItem.type === 'directory') {
+                const sourceName = sourcePath.split('/').pop();
+                finalDestPath = destPath === '/' ? '/' + sourceName : destPath + '/' + sourceName;
+            }
+            
             // Get destination directory and filename
-            const destParts = destPath.split('/');
+            const destParts = finalDestPath.split('/');
             const destName = destParts.pop();
             const destDir = destParts.join('/') || '/';
             const destDirObj = getDirectoryContents(destDir);
             
             if (!destDirObj || destDirObj.type !== 'directory') {
-                return `cp: cannot create regular file '${dest}': No such file or directory`;
+                return `cp: cannot create '${dest}': No such file or directory`;
             }
             
             if (!hasWritePermission(destDirObj)) {
-                return `cp: cannot create regular file '${dest}': Permission denied`;
+                return `cp: cannot create '${dest}': Permission denied`;
             }
             
             // Create copy
@@ -2124,6 +2182,10 @@ ${hostname} login: <span class="cursor">_</span>`;
             };
             
             return true;
+        }
+
+        function copyItem(source, dest) {
+            return copyItemAdvanced(source, dest, false);
         }
 
         function moveItem(source, dest) {
@@ -2421,11 +2483,22 @@ ${hostname} login: <span class="cursor">_</span>`;
                     if (args.length < 2) {
                         output = 'mkdir: missing operand\nTry "mkdir --help" for more information.';
                     } else {
-                        const dirName = args[1];
-                        if (createDirectory(currentDirectory, dirName)) {
-                            // Success, no output
+                        const dirPath = args[1];
+                        const createParents = args.includes('-p');
+                        
+                        if (dirPath.includes('/')) {
+                            // Handle full path creation
+                            const result = createDirectoryPath(dirPath, createParents);
+                            if (result !== true) {
+                                output = result;
+                            }
                         } else {
-                            output = `mkdir: cannot create directory '${dirName}': File exists`;
+                            // Simple directory creation in current directory
+                            if (createDirectory(currentDirectory, dirPath)) {
+                                // Success, no output
+                            } else {
+                                output = `mkdir: cannot create directory '${dirPath}': File exists`;
+                            }
                         }
                     }
                     break;
@@ -2491,10 +2564,15 @@ ${hostname} login: <span class="cursor">_</span>`;
                     
                 case 'help':
                     output = 'Available commands:\n' +
-                           'File operations: ls, pwd, cd, mkdir, touch, nano, cat, tree, cp, mv, rm, rmdir\n' +
+                           'File operations: ls, pwd, cd, mkdir [-p], touch, nano, cat, tree, cp [-r], mv, rm [-r], rmdir\n' +
                            'User management: whoami, useradd, userdel, passwd\n' +
                            'Permissions: chmod, chown\n' +
-                           'System: uname, date, clear, help, exit';
+                           'System: uname, date, clear, help, exit\n\n' +
+                           'Advanced path examples:\n' +
+                           '  mkdir -p /var/www/html/project/src    # Create nested directories\n' +
+                           '  cp -r /home/user/docs /backup/       # Copy directory recursively\n' +
+                           '  cp /etc/hostname /tmp/backup.txt     # Copy file to different location\n' +
+                           '  mkdir /root/projects/web/frontend    # Create deep directory structure';
                     break;
                     
                 case 'tree':
@@ -2627,11 +2705,20 @@ ${hostname} login: <span class="cursor">_</span>`;
                     
                 case 'cp':
                     if (args.length < 3) {
-                        output = 'cp: missing operand\nUsage: cp [source] [destination]';
+                        output = 'cp: missing operand\nUsage: cp [-r] [source] [destination]';
                     } else {
-                        const source = args[1];
-                        const dest = args[2];
-                        const result = copyItem(source, dest);
+                        const recursive = args.includes('-r');
+                        const sourceIndex = recursive ? 2 : 1;
+                        const destIndex = recursive ? 3 : 2;
+                        
+                        if (args.length <= destIndex) {
+                            output = 'cp: missing destination operand';
+                            break;
+                        }
+                        
+                        const source = args[sourceIndex];
+                        const dest = args[destIndex];
+                        const result = copyItemAdvanced(source, dest, recursive);
                         if (result !== true) {
                             output = result;
                         }
@@ -2823,10 +2910,26 @@ ${hostname} login: <span class="cursor">_</span>`;
         function toggleShift() {
             shiftActive = !shiftActive;
             const shiftKey = document.getElementById('shiftKey');
+            const letterKeys = document.querySelectorAll('#normalKeyboard .keyboard-key:not(.special):not(.shift):not(.ctrl):not(.wide):not(.extra-wide):not(.space)');
+            
             if (shiftActive) {
                 shiftKey.classList.add('active');
+                // Update letter keys to uppercase
+                letterKeys.forEach(key => {
+                    const text = key.textContent;
+                    if (text.length === 1 && /[a-z]/.test(text)) {
+                        key.textContent = text.toUpperCase();
+                    }
+                });
             } else {
                 shiftKey.classList.remove('active');
+                // Update letter keys to lowercase
+                letterKeys.forEach(key => {
+                    const text = key.textContent;
+                    if (text.length === 1 && /[A-Z]/.test(text)) {
+                        key.textContent = text.toLowerCase();
+                    }
+                });
             }
         }
 
@@ -3005,5 +3108,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761245704f881d7',t:'MTc1NjM1NjE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761b3ba7409f900',t:'MTc1NjM2MjAxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
