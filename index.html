@@ -147,6 +147,12 @@
             left: 0 !important;
             width: 100% !important;
             z-index: 1000 !important;
+            padding-bottom: 60px;
+        }
+
+        .login-screen.keyboard-active {
+            padding-bottom: 320px;
+            height: calc(100vh - 260px);
         }
 
         .login-screen.active {
@@ -386,6 +392,14 @@
             .terminal, .login-screen {
                 font-size: 12px;
                 padding: 10px;
+                padding-bottom: 80px;
+            }
+            
+            .login-screen.keyboard-active {
+                padding-bottom: 340px;
+                height: calc(100vh - 280px);
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
             }
             
             .installer-screen {
@@ -1826,7 +1840,15 @@ ${hostname} login: <span class="cursor">_</span>`;
             }
             const currentPrompt = getCurrentPrompt();
             loginContent.innerHTML += currentPrompt + '<span class="cursor">_</span>';
-            loginContent.scrollTop = loginContent.scrollHeight;
+            
+            // Ensure proper scrolling on mobile
+            setTimeout(() => {
+                loginContent.scrollTop = loginContent.scrollHeight;
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen && loginScreen.classList.contains('keyboard-active')) {
+                    loginScreen.scrollTop = loginScreen.scrollHeight;
+                }
+            }, 50);
         }
 
         // Mobile support functions
@@ -1879,19 +1901,39 @@ ${hostname} login: <span class="cursor">_</span>`;
         function showVirtualKeyboard() {
             const virtualKeyboard = document.getElementById('virtualKeyboard');
             const mobileKeyboard = document.getElementById('mobileKeyboard');
+            const loginScreen = document.getElementById('loginScreen');
+            const loginContent = document.getElementById('loginContent');
             
             virtualKeyboard.classList.add('active');
             mobileKeyboard.classList.add('active');
             mobileKeyboard.textContent = '⌨️ Hide Keyboard';
+            
+            // Add keyboard-active class for mobile scrolling
+            if (loginScreen.classList.contains('active')) {
+                loginScreen.classList.add('keyboard-active');
+                // Auto-scroll to bottom when keyboard appears
+                setTimeout(() => {
+                    if (loginContent) {
+                        loginContent.scrollTop = loginContent.scrollHeight;
+                        loginScreen.scrollTop = loginScreen.scrollHeight;
+                    }
+                }, 100);
+            }
         }
 
         function hideVirtualKeyboard() {
             const virtualKeyboard = document.getElementById('virtualKeyboard');
             const mobileKeyboard = document.getElementById('mobileKeyboard');
+            const loginScreen = document.getElementById('loginScreen');
             
             virtualKeyboard.classList.remove('active');
             mobileKeyboard.classList.remove('active');
             mobileKeyboard.textContent = '⌨️ Virtual Keyboard';
+            
+            // Remove keyboard-active class
+            if (loginScreen) {
+                loginScreen.classList.remove('keyboard-active');
+            }
         }
 
         function setKeyboardMode(mode) {
@@ -2011,7 +2053,15 @@ ${hostname} login: <span class="cursor">_</span>`;
             }
             
             loginContent.innerHTML = lines.join('\n');
-            loginContent.scrollTop = loginContent.scrollHeight;
+            
+            // Ensure proper scrolling on mobile with keyboard
+            setTimeout(() => {
+                loginContent.scrollTop = loginContent.scrollHeight;
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen && loginScreen.classList.contains('keyboard-active')) {
+                    loginScreen.scrollTop = loginScreen.scrollHeight;
+                }
+            }, 10);
         }
 
         // Initialize when page loads
@@ -2042,5 +2092,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975f638cc75ff3fb',t:'MTc1NjMzNzc2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fc041b722ce0d',t:'MTc1NjM0MTU2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
