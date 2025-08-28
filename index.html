@@ -71,6 +71,8 @@
             min-height: 40px;
             display: flex;
             align-items: center;
+            outline: none;
+            position: relative;
         }
 
         .menu-item:hover, .menu-item.selected, .menu-item:active, .menu-item:focus {
@@ -80,6 +82,11 @@
 
         .menu-item:active {
             transform: scale(0.98);
+        }
+
+        .menu-item.highlighted {
+            background: #ff0000;
+            border: 1px solid #fff;
         }
 
         .input-field {
@@ -967,13 +974,13 @@
             <div class="menu-item selected" onclick="selectMirror('yes')">Yes</div>
             <div class="menu-item" onclick="selectMirror('no')">No</div>
             <h3>Debian archive mirror country:</h3>
-            <div class="menu-item selected">Indonesia</div>
-            <div class="menu-item">United States</div>
-            <div class="menu-item">Germany</div>
+            <div class="menu-item selected" onclick="selectMirrorCountry('Indonesia')">Indonesia</div>
+            <div class="menu-item" onclick="selectMirrorCountry('United States')">United States</div>
+            <div class="menu-item" onclick="selectMirrorCountry('Germany')">Germany</div>
             <h3>Debian archive mirror:</h3>
-            <div class="menu-item selected">deb.debian.org</div>
-            <div class="menu-item">mirror.unej.ac.id</div>
-            <div class="menu-item">kartolo.sby.datautama.net.id</div>
+            <div class="menu-item selected" onclick="selectMirrorSite('deb.debian.org')">deb.debian.org</div>
+            <div class="menu-item" onclick="selectMirrorSite('mirror.unej.ac.id')">mirror.unej.ac.id</div>
+            <div class="menu-item" onclick="selectMirrorSite('kartolo.sby.datautama.net.id')">kartolo.sby.datautama.net.id</div>
         </div>
         <button class="button" onclick="nextStep('proxyScreen')">Continue</button>
     </div>
@@ -1384,7 +1391,140 @@
                 '',
                 'Booting from CD-ROM...',
                 '',
-                'Loading Debian GNU/Linux installer...',
+                'Loading GRUB...',
+                ''
+            ];
+
+            let i = 0;
+            function typeMessage() {
+                if (i < bootMessages.length) {
+                    bootScreen.innerHTML += bootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(typeMessage, 200 + Math.floor(Math.random() * 200));
+                } else {
+                    setTimeout(() => {
+                        showGrubMenu();
+                    }, 500);
+                }
+            }
+            typeMessage();
+        }
+
+        function showGrubMenu() {
+            const bootScreen = document.getElementById('bootScreen');
+            bootScreen.innerHTML = '';
+            
+            let selectedIndex = 0;
+            const menuItems = [
+                'Debian GNU/Linux Live (with installer)',
+                'Debian GNU/Linux Live (without installer)',
+                'Advanced options for Debian GNU/Linux',
+                'Memory test (memtest86+)'
+            ];
+            
+            function updateGrubDisplay() {
+                let displayText = `
+                            GNU GRUB  version 2.06
+
+`;
+                menuItems.forEach((item, index) => {
+                    if (index === selectedIndex) {
+                        displayText += `   > ${item} <\n`;
+                    } else {
+                        displayText += `   ${item}\n`;
+                    }
+                });
+                
+                displayText += `
+   Use the ↑ and ↓ keys to select which entry is highlighted.
+   Press enter to boot the selected OS, 'e' to edit the commands
+   before booting or 'c' for a command-line.
+
+   🖱️ Click/Tap controls:
+   🔹 Single click/tap to cycle through options
+   🔹 Double click/tap to select current option
+
+`;
+                bootScreen.innerHTML = displayText;
+            }
+            
+            updateGrubDisplay();
+            
+            // Keyboard navigation
+            function grubKeyHandler(e) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + menuItems.length) % menuItems.length;
+                    updateGrubDisplay();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % menuItems.length;
+                    updateGrubDisplay();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.removeEventListener('keydown', grubKeyHandler);
+                    selectGrubOption(selectedIndex);
+                }
+            }
+            
+            document.addEventListener('keydown', grubKeyHandler);
+            
+            // Click/Touch support for GRUB menu
+            setTimeout(() => {
+                let lastClick = 0;
+                
+                function handleGrubClick(e) {
+                    e.preventDefault();
+                    const currentTime = new Date().getTime();
+                    const clickLength = currentTime - lastClick;
+                    
+                    if (clickLength < 500 && clickLength > 0) {
+                        // Double click/tap - select option
+                        document.removeEventListener('keydown', grubKeyHandler);
+                        bootScreen.removeEventListener('click', handleGrubClick);
+                        bootScreen.removeEventListener('touchend', handleGrubClick);
+                        selectGrubOption(selectedIndex);
+                    } else {
+                        // Single click/tap - cycle through options
+                        selectedIndex = (selectedIndex + 1) % menuItems.length;
+                        updateGrubDisplay();
+                    }
+                    lastClick = currentTime;
+                }
+                
+                bootScreen.addEventListener('click', handleGrubClick);
+                bootScreen.addEventListener('touchend', handleGrubClick);
+            }, 1000);
+        }
+        
+        function selectGrubOption(index) {
+            const bootScreen = document.getElementById('bootScreen');
+            
+            if (index === 0) {
+                // Boot with installer
+                bootScreen.innerHTML = 'Loading Debian GNU/Linux installer...\n';
+                setTimeout(() => {
+                    startInstallerBoot();
+                }, 1000);
+            } else if (index === 1) {
+                // Boot without installer (Live mode)
+                bootScreen.innerHTML = 'Loading Debian GNU/Linux Live...\n';
+                setTimeout(() => {
+                    startLiveBoot();
+                }, 1000);
+            } else {
+                // Other options - default to installer
+                bootScreen.innerHTML = 'Loading...\n';
+                setTimeout(() => {
+                    startInstallerBoot();
+                }, 1000);
+            }
+        }
+        
+        function startInstallerBoot() {
+            const bootScreen = document.getElementById('bootScreen');
+            const bootMessages = [
                 'Loading initial ramdisk...',
                 '',
                 'Starting kernel...',
@@ -1418,6 +1558,73 @@
                 }
             }
             typeMessage();
+        }
+        
+        function startLiveBoot() {
+            const bootScreen = document.getElementById('bootScreen');
+            const liveBootMessages = [
+                'Loading initial ramdisk...',
+                '',
+                'Starting kernel...',
+                '',
+                '[    0.000000] Linux version 5.10.0-21-amd64',
+                '[    0.000000] Command line: BOOT_IMAGE=/live/vmlinuz boot=live',
+                '[    0.123456] Memory: 2048MB available',
+                '[    0.234567] CPU: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz',
+                '[    0.345678] PCI: Found 12 devices',
+                '[    0.456789] USB: 3 ports detected',
+                '[    0.567890] Network: eth0 detected',
+                '[    1.234567] Starting Debian Live system...',
+                '[    2.345678] Mounting filesystems...',
+                '[    3.456789] Starting network...',
+                '[    4.567890] Starting SSH daemon...',
+                '[    5.678901] System ready.',
+                '',
+                '🚀 Debian Live Mode - No Installation Required!',
+                '',
+                '📋 Default Login Credentials:',
+                '   Username: root',
+                '   Password: 123',
+                '',
+                '✨ Features available in Live mode:',
+                '• Full terminal access',
+                '• File system operations',
+                '• User management',
+                '• Network tools',
+                '• All practice exercises',
+                '',
+                'Starting login screen...'
+            ];
+
+            let i = 0;
+            function typeMessage() {
+                if (i < liveBootMessages.length) {
+                    bootScreen.innerHTML += liveBootMessages[i] + '\n';
+                    bootScreen.scrollTop = bootScreen.scrollHeight;
+                    i++;
+                    setTimeout(typeMessage, 150 + Math.floor(Math.random() * 100));
+                } else {
+                    setTimeout(() => {
+                        // Initialize system for live mode
+                        initializeLiveSystem();
+                        showLoginScreen();
+                    }, 1000);
+                }
+            }
+            typeMessage();
+        }
+        
+        function initializeLiveSystem() {
+            // Set default credentials for live mode
+            installationData = {
+                hostname: 'debian-live',
+                rootPassword: '123',
+                username: 'user',
+                userPassword: '123'
+            };
+            
+            // Initialize system with live mode settings
+            initializeSystem();
         }
 
         function selectLanguage(lang) {
@@ -1490,6 +1697,24 @@
         function selectGrub(option) {
             document.querySelectorAll('#grubScreen .menu-item').forEach(item => {
                 item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectMirrorCountry(country) {
+            document.querySelectorAll('#packageScreen .menu-item').forEach(item => {
+                if (item.textContent === 'Indonesia' || item.textContent === 'United States' || item.textContent === 'Germany') {
+                    item.classList.remove('selected');
+                }
+            });
+            event.target.classList.add('selected');
+        }
+
+        function selectMirrorSite(site) {
+            document.querySelectorAll('#packageScreen .menu-item').forEach(item => {
+                if (item.textContent.includes('deb.debian.org') || item.textContent.includes('mirror.unej.ac.id') || item.textContent.includes('kartolo.sby.datautama.net.id')) {
+                    item.classList.remove('selected');
+                }
             });
             event.target.classList.add('selected');
         }
@@ -1781,7 +2006,7 @@
                 credentialsInfo += `${installationData.username} / ${users[installationData.username].password}\n`;
             }
             
-            const loginText = `Debian GNU/Linux 11 ${hostname} tty1
+            const loginText = `Linux 12 ${hostname} tty1
 ${credentialsInfo}
 ${hostname} login: <span class="cursor">_</span>`;
             
@@ -2069,6 +2294,61 @@ ${hostname} login: <span class="cursor">_</span>`;
             
             delete dir.contents[name];
             return true;
+        }
+
+        function removeItemAdvanced(target, recursive = false, force = false) {
+            const targetPath = resolvePath(target);
+            const parts = targetPath.split('/');
+            const name = parts.pop();
+            const parentPath = parts.join('/') || '/';
+            
+            const parentDir = getDirectoryContents(parentPath);
+            if (!parentDir || parentDir.type !== 'directory') {
+                return force ? true : `rm: cannot remove '${target}': No such file or directory`;
+            }
+            
+            if (!parentDir.contents[name]) {
+                return force ? true : `rm: cannot remove '${target}': No such file or directory`;
+            }
+            
+            if (!hasWritePermission(parentDir) && !force) {
+                return `rm: cannot remove '${target}': Permission denied`;
+            }
+            
+            const targetItem = parentDir.contents[name];
+            if (targetItem.type === 'directory' && !recursive) {
+                return force ? true : `rm: cannot remove '${target}': Is a directory`;
+            }
+            
+            // Force delete ignores most errors
+            if (force || hasWritePermission(parentDir)) {
+                delete parentDir.contents[name];
+            }
+            
+            return true;
+        }
+
+        function expandBraces(pattern) {
+            // Handle brace expansion like {www,log,cache} or {config,data,log}.txt
+            const braceMatch = pattern.match(/^(.*?)\{([^}]+)\}(.*)$/);
+            if (braceMatch) {
+                const prefix = braceMatch[1];
+                const options = braceMatch[2].split(',');
+                const suffix = braceMatch[3];
+                
+                return options.map(option => prefix + option.trim() + suffix);
+            }
+            
+            // Handle simple wildcards (basic implementation)
+            if (pattern.includes('*')) {
+                const currentDir = getDirectoryContents(currentDirectory);
+                if (currentDir && currentDir.contents) {
+                    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+                    return Object.keys(currentDir.contents).filter(name => regex.test(name));
+                }
+            }
+            
+            return [pattern];
         }
 
         function renameItem(path, oldName, newName) {
@@ -2483,22 +2763,37 @@ ${hostname} login: <span class="cursor">_</span>`;
                     if (args.length < 2) {
                         output = 'mkdir: missing operand\nTry "mkdir --help" for more information.';
                     } else {
-                        const dirPath = args[1];
                         const createParents = args.includes('-p');
+                        const dirPaths = args.filter(arg => arg !== 'mkdir' && arg !== '-p');
+                        let errors = [];
                         
-                        if (dirPath.includes('/')) {
-                            // Handle full path creation
-                            const result = createDirectoryPath(dirPath, createParents);
-                            if (result !== true) {
-                                output = result;
+                        for (const dirPath of dirPaths) {
+                            // Handle brace expansion like {www,log,cache}
+                            const expandedPaths = expandBraces(dirPath);
+                            
+                            for (const expandedPath of expandedPaths) {
+                                if (expandedPath.includes('/')) {
+                                    // Handle full path creation
+                                    const result = createDirectoryPath(expandedPath, createParents);
+                                    if (result !== true) {
+                                        errors.push(result);
+                                    }
+                                } else {
+                                    // Simple directory creation in current directory
+                                    if (!createDirectory(currentDirectory, expandedPath)) {
+                                        const existing = getDirectoryContents(currentDirectory + '/' + expandedPath);
+                                        if (existing) {
+                                            errors.push(`mkdir: cannot create directory '${expandedPath}': File exists`);
+                                        } else {
+                                            errors.push(`mkdir: cannot create directory '${expandedPath}': Permission denied`);
+                                        }
+                                    }
+                                }
                             }
-                        } else {
-                            // Simple directory creation in current directory
-                            if (createDirectory(currentDirectory, dirPath)) {
-                                // Success, no output
-                            } else {
-                                output = `mkdir: cannot create directory '${dirPath}': File exists`;
-                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
@@ -2564,15 +2859,23 @@ ${hostname} login: <span class="cursor">_</span>`;
                     
                 case 'help':
                     output = 'Available commands:\n' +
-                           'File operations: ls, pwd, cd, mkdir [-p], touch, nano, cat, tree, cp [-r], mv, rm [-r], rmdir\n' +
+                           'File operations: ls, pwd, cd, mkdir [-p], touch, nano, cat, tree, cp [-r], mv, rm [-r/-rf], rmdir\n' +
                            'User management: whoami, useradd, userdel, passwd\n' +
                            'Permissions: chmod, chown\n' +
                            'System: uname, date, clear, help, exit\n\n' +
-                           'Advanced path examples:\n' +
+                           'Advanced shortcuts & batch operations:\n' +
+                           '  mkdir dir1 dir2 dir3                 # Create multiple directories\n' +
+                           '  mkdir -p /var/{www,log,cache}/app    # Create nested structure\n' +
+                           '  touch file1.txt file2.txt file3.txt # Create multiple files\n' +
+                           '  touch /tmp/{config,data,log}.txt     # Create files in different location\n' +
+                           '  cp file1.txt file2.txt /backup/      # Copy multiple files to directory\n' +
+                           '  mv *.txt /archive/                   # Move all .txt files\n' +
+                           '  rm -rf /tmp/old_project/             # Force delete directory with contents\n' +
+                           '  cp -r /src/{docs,tests} /backup/     # Copy multiple directories\n\n' +
+                           'Path examples:\n' +
                            '  mkdir -p /var/www/html/project/src    # Create nested directories\n' +
                            '  cp -r /home/user/docs /backup/       # Copy directory recursively\n' +
-                           '  cp /etc/hostname /tmp/backup.txt     # Copy file to different location\n' +
-                           '  mkdir /root/projects/web/frontend    # Create deep directory structure';
+                           '  cp /etc/hostname /tmp/backup.txt     # Copy file to different location';
                     break;
                     
                 case 'tree':
@@ -2593,11 +2896,47 @@ ${hostname} login: <span class="cursor">_</span>`;
                     if (args.length < 2) {
                         output = 'touch: missing file operand\nTry "touch --help" for more information.';
                     } else {
-                        const fileName = args[1];
-                        if (createFile(currentDirectory, fileName, '')) {
-                            // Success, no output
-                        } else {
-                            output = `touch: cannot touch '${fileName}': Permission denied`;
+                        const fileNames = args.slice(1);
+                        let errors = [];
+                        
+                        for (const fileName of fileNames) {
+                            // Handle brace expansion like {config,data,log}.txt
+                            const expandedNames = expandBraces(fileName);
+                            
+                            for (const expandedName of expandedNames) {
+                                if (expandedName.includes('/')) {
+                                    // Handle full path - resolve relative paths properly
+                                    const fullPath = resolvePath(expandedName);
+                                    const parts = fullPath.split('/').filter(p => p);
+                                    const name = parts.pop();
+                                    const dirPath = parts.length > 0 ? '/' + parts.join('/') : '/';
+                                    const dir = getDirectoryContents(dirPath);
+                                    
+                                    if (!dir || dir.type !== 'directory') {
+                                        errors.push(`touch: cannot touch '${expandedName}': No such file or directory`);
+                                    } else if (!hasWritePermission(dir)) {
+                                        errors.push(`touch: cannot touch '${expandedName}': Permission denied`);
+                                    } else {
+                                        dir.contents[name] = {
+                                            type: 'file',
+                                            permissions: '644',
+                                            owner: currentUser,
+                                            group: users[currentUser] ? users[currentUser].groups[0] : 'root',
+                                            content: '',
+                                            size: 0
+                                        };
+                                    }
+                                } else {
+                                    // Simple file creation in current directory
+                                    if (!createFile(currentDirectory, expandedName, '')) {
+                                        errors.push(`touch: cannot touch '${expandedName}': Permission denied`);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
@@ -2705,35 +3044,60 @@ ${hostname} login: <span class="cursor">_</span>`;
                     
                 case 'cp':
                     if (args.length < 3) {
-                        output = 'cp: missing operand\nUsage: cp [-r] [source] [destination]';
+                        output = 'cp: missing operand\nUsage: cp [-r] [source...] [destination]';
                     } else {
                         const recursive = args.includes('-r');
-                        const sourceIndex = recursive ? 2 : 1;
-                        const destIndex = recursive ? 3 : 2;
+                        const filteredArgs = args.filter(arg => arg !== 'cp' && arg !== '-r');
                         
-                        if (args.length <= destIndex) {
+                        if (filteredArgs.length < 2) {
                             output = 'cp: missing destination operand';
                             break;
                         }
                         
-                        const source = args[sourceIndex];
-                        const dest = args[destIndex];
-                        const result = copyItemAdvanced(source, dest, recursive);
-                        if (result !== true) {
-                            output = result;
+                        const dest = filteredArgs[filteredArgs.length - 1];
+                        const sources = filteredArgs.slice(0, -1);
+                        let errors = [];
+                        
+                        for (const source of sources) {
+                            // Handle brace expansion and wildcards
+                            const expandedSources = expandBraces(source);
+                            
+                            for (const expandedSource of expandedSources) {
+                                const result = copyItemAdvanced(expandedSource, dest, recursive);
+                                if (result !== true) {
+                                    errors.push(result);
+                                }
+                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
                     
                 case 'mv':
                     if (args.length < 3) {
-                        output = 'mv: missing operand\nUsage: mv [source] [destination]';
+                        output = 'mv: missing operand\nUsage: mv [source...] [destination]';
                     } else {
-                        const source = args[1];
-                        const dest = args[2];
-                        const result = moveItem(source, dest);
-                        if (result !== true) {
-                            output = result;
+                        const dest = args[args.length - 1];
+                        const sources = args.slice(1, -1);
+                        let errors = [];
+                        
+                        for (const source of sources) {
+                            // Handle brace expansion and wildcards
+                            const expandedSources = expandBraces(source);
+                            
+                            for (const expandedSource of expandedSources) {
+                                const result = moveItem(expandedSource, dest);
+                                if (result !== true) {
+                                    errors.push(result);
+                                }
+                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
@@ -2742,11 +3106,25 @@ ${hostname} login: <span class="cursor">_</span>`;
                     if (args.length < 2) {
                         output = 'rm: missing operand\nTry "rm --help" for more information.';
                     } else {
-                        const target = args[1];
                         const recursive = args.includes('-r') || args.includes('-rf');
-                        const result = removeItem(currentDirectory, target, recursive);
-                        if (result !== true) {
-                            output = result;
+                        const force = args.includes('-f') || args.includes('-rf');
+                        const targets = args.filter(arg => arg !== 'rm' && arg !== '-r' && arg !== '-f' && arg !== '-rf');
+                        let errors = [];
+                        
+                        for (const target of targets) {
+                            // Handle brace expansion and wildcards
+                            const expandedTargets = expandBraces(target);
+                            
+                            for (const expandedTarget of expandedTargets) {
+                                const result = removeItemAdvanced(expandedTarget, recursive, force);
+                                if (result !== true && !force) {
+                                    errors.push(result);
+                                }
+                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
@@ -2755,11 +3133,33 @@ ${hostname} login: <span class="cursor">_</span>`;
                     if (args.length < 2) {
                         output = 'rmdir: missing operand\nTry "rmdir --help" for more information.';
                     } else {
-                        const target = args[1];
-                        if (removeDirectory(currentDirectory, target)) {
-                            // Success, no output
-                        } else {
-                            output = `rmdir: failed to remove '${target}': Directory not empty or does not exist`;
+                        const targets = args.slice(1);
+                        let errors = [];
+                        
+                        for (const target of targets) {
+                            // Handle brace expansion
+                            const expandedTargets = expandBraces(target);
+                            
+                            for (const expandedTarget of expandedTargets) {
+                                if (expandedTarget.includes('/')) {
+                                    // Handle full path
+                                    const parts = expandedTarget.split('/');
+                                    const dirName = parts.pop();
+                                    const parentPath = parts.join('/') || '/';
+                                    
+                                    if (!removeDirectory(parentPath, dirName)) {
+                                        errors.push(`rmdir: failed to remove '${expandedTarget}': Directory not empty or does not exist`);
+                                    }
+                                } else {
+                                    if (!removeDirectory(currentDirectory, expandedTarget)) {
+                                        errors.push(`rmdir: failed to remove '${expandedTarget}': Directory not empty or does not exist`);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (errors.length > 0) {
+                            output = errors.join('\n');
                         }
                     }
                     break;
@@ -2817,15 +3217,32 @@ ${hostname} login: <span class="cursor">_</span>`;
             
             menuItems.forEach(item => {
                 item.setAttribute('data-touch-enabled', 'true');
+                item.setAttribute('tabindex', '0'); // Make focusable
+                
+                // Mouse click support
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    selectMenuItem(this);
+                });
+                
+                // Touch support
                 item.addEventListener('touchstart', function(e) {
                     e.preventDefault();
-                    this.classList.add('selected');
+                    this.classList.add('highlighted');
                 }, { passive: false });
                 
                 item.addEventListener('touchend', function(e) {
                     e.preventDefault();
-                    this.click();
+                    selectMenuItem(this);
                 }, { passive: false });
+                
+                // Keyboard support
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectMenuItem(this);
+                    }
+                });
             });
             
             buttons.forEach(button => {
@@ -2841,6 +3258,31 @@ ${hostname} login: <span class="cursor">_</span>`;
                     this.click();
                 }, { passive: false });
             });
+        }
+
+        // Helper function to select menu items
+        function selectMenuItem(item) {
+            // Remove selected class from siblings
+            const parent = item.parentElement;
+            const siblings = parent.querySelectorAll('.menu-item');
+            siblings.forEach(sibling => {
+                sibling.classList.remove('selected', 'highlighted');
+            });
+            
+            // Add selected class to clicked item
+            item.classList.add('selected');
+            
+            // Trigger the original onclick function if it exists
+            const onclickAttr = item.getAttribute('onclick');
+            if (onclickAttr) {
+                try {
+                    // Create a function from the onclick attribute and call it
+                    const func = new Function(onclickAttr);
+                    func.call(item);
+                } catch (e) {
+                    console.error('Error executing onclick:', e);
+                }
+            }
         }
 
         // Virtual keyboard functions
@@ -3053,6 +3495,89 @@ ${hostname} login: <span class="cursor">_</span>`;
             document.getElementById(`exercise${exerciseNum}`).classList.add('active');
         }
 
+        // Global keyboard navigation for installer screens
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', function(e) {
+                // Skip if nano editor is active
+                const nanoEditor = document.getElementById('nanoEditor');
+                if (nanoEditor.classList.contains('active')) {
+                    if (e.ctrlKey) {
+                        switch(e.key.toLowerCase()) {
+                            case 'o': // Write Out (Save)
+                                e.preventDefault();
+                                saveNanoFile();
+                                break;
+                            case 'x': // Exit
+                                e.preventDefault();
+                                exitNanoEditor();
+                                break;
+                            case 'g': // Help
+                                e.preventDefault();
+                                showNanoStatus('Ctrl+O: Save, Ctrl+X: Exit, Ctrl+G: Help');
+                                break;
+                        }
+                    }
+                    return;
+                }
+                
+                // Skip if login screen is active
+                if (document.getElementById('loginScreen').classList.contains('active')) {
+                    return;
+                }
+                
+                // Handle installer screen navigation
+                const activeScreen = document.querySelector('.installer-screen.active');
+                if (activeScreen) {
+                    const menuItems = activeScreen.querySelectorAll('.menu-item');
+                    const buttons = activeScreen.querySelectorAll('.button');
+                    
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        
+                        const currentSelected = activeScreen.querySelector('.menu-item.selected');
+                        let currentIndex = -1;
+                        
+                        if (currentSelected) {
+                            currentIndex = Array.from(menuItems).indexOf(currentSelected);
+                        }
+                        
+                        let newIndex;
+                        if (e.key === 'ArrowUp') {
+                            newIndex = currentIndex > 0 ? currentIndex - 1 : menuItems.length - 1;
+                        } else {
+                            newIndex = currentIndex < menuItems.length - 1 ? currentIndex + 1 : 0;
+                        }
+                        
+                        // Remove selection from all items
+                        menuItems.forEach(item => item.classList.remove('selected', 'highlighted'));
+                        
+                        // Select new item
+                        if (menuItems[newIndex]) {
+                            menuItems[newIndex].classList.add('selected');
+                            menuItems[newIndex].focus();
+                        }
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        
+                        const selectedItem = activeScreen.querySelector('.menu-item.selected');
+                        if (selectedItem) {
+                            selectMenuItem(selectedItem);
+                        } else if (buttons.length > 0) {
+                            // If no menu item selected, click the first button
+                            buttons[0].click();
+                        }
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        
+                        // Tab to continue button if available
+                        if (buttons.length > 0) {
+                            buttons[0].focus();
+                        }
+                    }
+                }
+            });
+        }
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize system first
@@ -3061,6 +3586,7 @@ ${hostname} login: <span class="cursor">_</span>`;
             // Start boot sequence
             startBoot();
             addTouchSupport();
+            setupKeyboardNavigation();
             
             // Setup practice button
             const practiceButton = document.getElementById('practiceButton');
@@ -3083,30 +3609,12 @@ ${hostname} login: <span class="cursor">_</span>`;
                     });
                 }
             }
-            
-            // Add nano editor keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
-                const nanoEditor = document.getElementById('nanoEditor');
-                if (nanoEditor.classList.contains('active')) {
-                    if (e.ctrlKey) {
-                        switch(e.key.toLowerCase()) {
-                            case 'o': // Write Out (Save)
-                                e.preventDefault();
-                                saveNanoFile();
-                                break;
-                            case 'x': // Exit
-                                e.preventDefault();
-                                exitNanoEditor();
-                                break;
-                            case 'g': // Help
-                                e.preventDefault();
-                                showNanoStatus('Ctrl+O: Save, Ctrl+X: Exit, Ctrl+G: Help');
-                                break;
-                        }
-                    }
-                }
-            });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761b3ba7409f900',t:'MTc1NjM2MjAxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    
+    <!-- Copyright Footer -->
+    <div style="position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%); color: #666; font-family: 'Courier New', monospace; font-size: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px; pointer-events: none;">
+        © 2025 Created by FoeziArisandiSJ
+    </div>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9767a22547e744a7',t:'MTc1NjQyNDIxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
