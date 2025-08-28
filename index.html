@@ -2204,9 +2204,15 @@ ${hostname} login: <span class="cursor">_</span>`;
             return parseInt(item.permissions[2]) % 2 === 1;
         }
 
-        function generateTreeOutput(path, dir, prefix = '', isLast = true) {
-            let output = path + '\n';
-            const items = Object.entries(dir.contents);
+        function generateTreeOutput(path, dir, prefix = '', isLast = true, isRoot = true) {
+            let output = '';
+            
+            // Only show the root path for the initial call
+            if (isRoot) {
+                output = path + '\n';
+            }
+            
+            const items = Object.entries(dir.contents || {});
             
             items.forEach(([name, item], index) => {
                 const isLastItem = index === items.length - 1;
@@ -2215,14 +2221,15 @@ ${hostname} login: <span class="cursor">_</span>`;
                 
                 output += prefix + connector + icon + name + '\n';
                 
-                if (item.type === 'directory' && Object.keys(item.contents).length > 0) {
+                // Recursively show subdirectories and their contents
+                if (item.type === 'directory' && item.contents && Object.keys(item.contents).length > 0) {
                     const newPrefix = prefix + (isLastItem ? '    ' : '│   ');
-                    const subTree = generateTreeOutput('', item, newPrefix, isLastItem);
-                    output += subTree.split('\n').slice(1).join('\n') + '\n';
+                    const subTree = generateTreeOutput('', item, newPrefix, isLastItem, false);
+                    output += subTree;
                 }
             });
             
-            return output.trim();
+            return output;
         }
 
         function openNanoEditor(fileName) {
@@ -2494,7 +2501,11 @@ ${hostname} login: <span class="cursor">_</span>`;
                     const treeDir = args.length > 1 ? args[1] : currentDirectory;
                     const targetDir = getDirectoryContents(treeDir);
                     if (targetDir && targetDir.type === 'directory') {
-                        output = generateTreeOutput(treeDir, targetDir);
+                        if (!hasReadPermission(targetDir)) {
+                            output = `tree: ${treeDir}: Permission denied`;
+                        } else {
+                            output = generateTreeOutput(treeDir, targetDir, '', true, true).trim();
+                        }
                     } else {
                         output = `tree: ${treeDir}: No such file or directory`;
                     }
@@ -2994,5 +3005,5 @@ ${hostname} login: <span class="cursor">_</span>`;
             });
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'976016ee440cdc19',t:'MTc1NjM0NTExMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9761245704f881d7',t:'MTc1NjM1NjE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
