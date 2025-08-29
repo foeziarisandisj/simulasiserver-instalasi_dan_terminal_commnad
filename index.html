@@ -274,6 +274,10 @@
             display: block;
         }
 
+        .virtual-keyboard.active ~ #copyrightFooter {
+            display: none;
+        }
+
         .keyboard-row {
             display: flex;
             justify-content: center;
@@ -726,14 +730,16 @@
             
             #materialsButton {
                 top: 10px !important;
-                right: 10px !important;
+                left: 10px !important;
+                right: auto !important;
                 padding: 8px 12px !important;
                 font-size: 12px !important;
             }
             
             #practiceButton {
                 top: 60px !important;
-                right: 10px !important;
+                left: 10px !important;
+                right: auto !important;
             }
             
             .practice-content {
@@ -1734,12 +1740,80 @@ $ mv config.py settings.py</pre>
    Press enter to boot the selected OS, 'e' to edit the commands
    before booting or 'c' for a command-line.
 
-   🖱️ Click/Tap controls:
-   🔹 Single click/tap to cycle through options
-   🔹 Double click/tap to select current option
+   📱 Mobile controls:
+   🔹 Use buttons below to navigate and select
+   🔹 Or tap screen to cycle through options
 
 `;
                 bootScreen.innerHTML = displayText;
+                
+                // Add mobile control buttons for GRUB
+                if (isMobile) {
+                    const grubControls = document.createElement('div');
+                    grubControls.id = 'grubControls';
+                    grubControls.style.cssText = `
+                        position: fixed;
+                        bottom: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        display: flex;
+                        gap: 10px;
+                        z-index: 1000;
+                        background: rgba(0,0,0,0.8);
+                        padding: 10px;
+                        border-radius: 8px;
+                        border: 1px solid #333;
+                    `;
+                    
+                    const upBtn = document.createElement('button');
+                    upBtn.textContent = '↑ Up';
+                    upBtn.style.cssText = `
+                        background: #333;
+                        color: #fff;
+                        border: 1px solid #555;
+                        padding: 10px 15px;
+                        border-radius: 4px;
+                        font-family: 'Courier New', monospace;
+                        cursor: pointer;
+                    `;
+                    upBtn.onclick = () => {
+                        selectedIndex = (selectedIndex - 1 + menuItems.length) % menuItems.length;
+                        updateGrubDisplay();
+                    };
+                    
+                    const downBtn = document.createElement('button');
+                    downBtn.textContent = '↓ Down';
+                    downBtn.style.cssText = upBtn.style.cssText;
+                    downBtn.onclick = () => {
+                        selectedIndex = (selectedIndex + 1) % menuItems.length;
+                        updateGrubDisplay();
+                    };
+                    
+                    const selectBtn = document.createElement('button');
+                    selectBtn.textContent = '✓ Select';
+                    selectBtn.style.cssText = `
+                        background: #007700;
+                        color: #fff;
+                        border: 1px solid #009900;
+                        padding: 10px 15px;
+                        border-radius: 4px;
+                        font-family: 'Courier New', monospace;
+                        cursor: pointer;
+                        font-weight: bold;
+                    `;
+                    selectBtn.onclick = () => {
+                        document.removeEventListener('keydown', grubKeyHandler);
+                        if (grubControls.parentNode) {
+                            grubControls.parentNode.removeChild(grubControls);
+                        }
+                        selectGrubOption(selectedIndex);
+                    };
+                    
+                    grubControls.appendChild(upBtn);
+                    grubControls.appendChild(downBtn);
+                    grubControls.appendChild(selectBtn);
+                    document.body.appendChild(grubControls);
+                }
             }
             
             updateGrubDisplay();
@@ -1793,6 +1867,12 @@ $ mv config.py settings.py</pre>
         
         function selectGrubOption(index) {
             const bootScreen = document.getElementById('bootScreen');
+            
+            // Clean up GRUB controls if they exist
+            const grubControls = document.getElementById('grubControls');
+            if (grubControls && grubControls.parentNode) {
+                grubControls.parentNode.removeChild(grubControls);
+            }
             
             if (index === 0) {
                 // Boot with installer
@@ -3584,10 +3664,16 @@ ${hostname} login: <span class="cursor">_</span>`;
             const mobileKeyboard = document.getElementById('mobileKeyboard');
             const loginScreen = document.getElementById('loginScreen');
             const loginContent = document.getElementById('loginContent');
+            const copyrightFooter = document.getElementById('copyrightFooter');
             
             virtualKeyboard.classList.add('active');
             mobileKeyboard.classList.add('active');
             mobileKeyboard.textContent = '⌨️ Hide Keyboard';
+            
+            // Hide copyright when keyboard is active
+            if (copyrightFooter) {
+                copyrightFooter.style.display = 'none';
+            }
             
             // Add keyboard-active class for mobile scrolling
             if (loginScreen.classList.contains('active')) {
@@ -3606,10 +3692,16 @@ ${hostname} login: <span class="cursor">_</span>`;
             const virtualKeyboard = document.getElementById('virtualKeyboard');
             const mobileKeyboard = document.getElementById('mobileKeyboard');
             const loginScreen = document.getElementById('loginScreen');
+            const copyrightFooter = document.getElementById('copyrightFooter');
             
             virtualKeyboard.classList.remove('active');
             mobileKeyboard.classList.remove('active');
             mobileKeyboard.textContent = '⌨️ Virtual Keyboard';
+            
+            // Show copyright when keyboard is hidden
+            if (copyrightFooter) {
+                copyrightFooter.style.display = 'block';
+            }
             
             // Remove keyboard-active class
             if (loginScreen) {
@@ -3939,8 +4031,8 @@ ${hostname} login: <span class="cursor">_</span>`;
     </script>
     
     <!-- Copyright Footer -->
-    <div style="position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%); color: #666; font-family: 'Courier New', monospace; font-size: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px; pointer-events: none;">
+    <div id="copyrightFooter" style="position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%); color: #666; font-family: 'Courier New', monospace; font-size: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px; pointer-events: none;">
         © 2025 Created by FoeziArisandiSJ
     </div>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97683531b0da44b7',t:'MTc1NjQzMDIzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97687d2671f2f888',t:'MTc1NjQzMzE4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
