@@ -191,28 +191,30 @@
 
         .practice-button {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 10px;
+            right: 10px;
             background: #007700;
             color: #fff;
             border: 2px solid #00aa00;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             font-family: 'Courier New', monospace;
-            font-size: 16px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             z-index: 1002;
             display: block;
-            box-shadow: 0 4px 12px rgba(0,119,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,119,0,0.3);
             transition: all 0.3s ease;
+            min-width: 80px;
+            text-align: center;
         }
 
         .practice-button:hover {
             background: #009900;
             border-color: #00cc00;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,119,0,0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,119,0,0.4);
         }
 
         .mobile-keyboard-trigger {
@@ -723,23 +725,9 @@
 
         @media (max-width: 768px) {
             .practice-button {
-                right: 10px;
-                padding: 10px 16px;
-                font-size: 14px;
-            }
-            
-            #materialsButton {
-                top: 10px !important;
-                left: 10px !important;
-                right: auto !important;
-                padding: 8px 12px !important;
-                font-size: 12px !important;
-            }
-            
-            #practiceButton {
-                top: 60px !important;
-                left: 10px !important;
-                right: auto !important;
+                padding: 6px 10px;
+                font-size: 11px;
+                min-width: 70px;
             }
             
             .practice-content {
@@ -1080,10 +1068,10 @@
     </div>
 
     <!-- Materials Button -->
-    <button id="materialsButton" class="practice-button" style="top: 20px; right: 20px; background: #0066cc; border-color: #0088ff;">📖 Materi</button>
+    <button id="materialsButton" class="practice-button" style="top: 10px; right: 10px; background: #0066cc; border-color: #0088ff;">📖 Materi</button>
 
     <!-- Practice Exercise Button -->
-    <button id="practiceButton" class="practice-button" style="top: 80px; right: 20px;">📚 Tugas Latihan</button>
+    <button id="practiceButton" class="practice-button" style="top: 50px; right: 10px;">📚 Tugas</button>
 
     <!-- Mobile Keyboard Trigger Button -->
     <button id="mobileKeyboard" class="mobile-keyboard-trigger">⌨️ Virtual Keyboard</button>
@@ -1802,10 +1790,6 @@ $ mv config.py settings.py</pre>
                         font-weight: bold;
                     `;
                     selectBtn.onclick = () => {
-                        document.removeEventListener('keydown', grubKeyHandler);
-                        if (grubControls.parentNode) {
-                            grubControls.parentNode.removeChild(grubControls);
-                        }
                         selectGrubOption(selectedIndex);
                     };
                     
@@ -1830,11 +1814,12 @@ $ mv config.py settings.py</pre>
                     updateGrubDisplay();
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
-                    document.removeEventListener('keydown', grubKeyHandler);
                     selectGrubOption(selectedIndex);
                 }
             }
             
+            // Store handler reference for cleanup
+            window.currentGrubKeyHandler = grubKeyHandler;
             document.addEventListener('keydown', grubKeyHandler);
             
             // Click/Touch support for GRUB menu
@@ -1848,9 +1833,6 @@ $ mv config.py settings.py</pre>
                     
                     if (clickLength < 500 && clickLength > 0) {
                         // Double click/tap - select option
-                        document.removeEventListener('keydown', grubKeyHandler);
-                        bootScreen.removeEventListener('click', handleGrubClick);
-                        bootScreen.removeEventListener('touchend', handleGrubClick);
                         selectGrubOption(selectedIndex);
                     } else {
                         // Single click/tap - cycle through options
@@ -1860,6 +1842,8 @@ $ mv config.py settings.py</pre>
                     lastClick = currentTime;
                 }
                 
+                // Store handler reference for cleanup
+                window.currentGrubClickHandler = handleGrubClick;
                 bootScreen.addEventListener('click', handleGrubClick);
                 bootScreen.addEventListener('touchend', handleGrubClick);
             }, 1000);
@@ -1870,8 +1854,19 @@ $ mv config.py settings.py</pre>
             
             // Clean up GRUB controls if they exist
             const grubControls = document.getElementById('grubControls');
-            if (grubControls && grubControls.parentNode) {
-                grubControls.parentNode.removeChild(grubControls);
+            if (grubControls) {
+                grubControls.remove();
+            }
+            
+            // Remove event listeners to prevent further interaction
+            if (window.currentGrubKeyHandler) {
+                document.removeEventListener('keydown', window.currentGrubKeyHandler);
+                window.currentGrubKeyHandler = null;
+            }
+            if (window.currentGrubClickHandler) {
+                bootScreen.removeEventListener('click', window.currentGrubClickHandler);
+                bootScreen.removeEventListener('touchend', window.currentGrubClickHandler);
+                window.currentGrubClickHandler = null;
             }
             
             if (index === 0) {
@@ -4034,5 +4029,5 @@ ${hostname} login: <span class="cursor">_</span>`;
     <div id="copyrightFooter" style="position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%); color: #666; font-family: 'Courier New', monospace; font-size: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px; pointer-events: none;">
         © 2025 Created by FoeziArisandiSJ
     </div>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97687d2671f2f888',t:'MTc1NjQzMzE4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9768e60b637a6014',t:'MTc1NjQzNzQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
