@@ -719,10 +719,21 @@
 
         @media (max-width: 768px) {
             .practice-button {
-                top: 10px;
                 right: 10px;
                 padding: 10px 16px;
                 font-size: 14px;
+            }
+            
+            #materialsButton {
+                top: 10px !important;
+                right: 10px !important;
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+            }
+            
+            #practiceButton {
+                top: 60px !important;
+                right: 10px !important;
             }
             
             .practice-content {
@@ -1062,14 +1073,324 @@
         <input type="text" id="mobileInput" class="mobile-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
 
+    <!-- Materials Button -->
+    <button id="materialsButton" class="practice-button" style="top: 20px; right: 20px; background: #0066cc; border-color: #0088ff;">📖 Materi</button>
+
     <!-- Practice Exercise Button -->
-    <button id="practiceButton" class="practice-button">📚 Tugas Latihan</button>
+    <button id="practiceButton" class="practice-button" style="top: 80px; right: 20px;">📚 Tugas Latihan</button>
 
     <!-- Mobile Keyboard Trigger Button -->
     <button id="mobileKeyboard" class="mobile-keyboard-trigger">⌨️ Virtual Keyboard</button>
     
     <!-- Mobile Status Indicator -->
     <div id="mobileStatus" class="mobile-status">Mobile Mode</div>
+
+    <!-- Materials Popup -->
+    <div id="materialsPopup" class="practice-popup">
+        <div class="practice-content">
+            <div class="practice-header">
+                <h2>📖 Materi Terminal Linux</h2>
+                <button class="practice-close" onclick="closeMaterialsPopup()">✕</button>
+            </div>
+            
+            <div class="practice-tabs">
+                <button class="exercise-btn active" id="mat1" onclick="selectMaterial(1)">Perintah Dasar</button>
+                <button class="exercise-btn" id="mat2" onclick="selectMaterial(2)">Shortcut & Batch</button>
+                <button class="exercise-btn" id="mat3" onclick="selectMaterial(3)">Permission</button>
+                <button class="exercise-btn" id="mat4" onclick="selectMaterial(4)">File Operations</button>
+            </div>
+            
+            <div class="practice-body">
+                <!-- Material 1: Basic Commands -->
+                <div class="exercise-content active" id="material1">
+                    <h3>🔧 Perintah Dasar Terminal</h3>
+                    
+                    <div class="commands-needed">
+                        <h4>📁 Navigasi Direktori</h4>
+                        <ul>
+                            <li><code>pwd</code> - Menampilkan direktori saat ini</li>
+                            <li><code>ls</code> - Melihat isi direktori</li>
+                            <li><code>ls -l</code> - Melihat detail file (permission, owner, size)</li>
+                            <li><code>ls -la</code> - Melihat semua file termasuk hidden files</li>
+                            <li><code>cd /path</code> - Pindah ke direktori tertentu</li>
+                            <li><code>cd ..</code> - Pindah ke direktori parent</li>
+                            <li><code>cd ~</code> - Pindah ke home directory</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Penggunaan:</h4>
+                        <pre>$ pwd
+/root
+$ ls
+Desktop  Documents  Downloads
+$ cd Documents
+$ pwd
+/root/Documents
+$ cd ..
+$ pwd
+/root</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>📄 Operasi File Dasar</h4>
+                        <ul>
+                            <li><code>touch filename</code> - Membuat file kosong</li>
+                            <li><code>mkdir dirname</code> - Membuat direktori</li>
+                            <li><code>cat filename</code> - Melihat isi file</li>
+                            <li><code>nano filename</code> - Edit file dengan nano editor</li>
+                            <li><code>tree</code> - Melihat struktur direktori dalam bentuk pohon</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Material 2: Shortcuts & Batch Operations -->
+                <div class="exercise-content" id="material2">
+                    <h3>⚡ Shortcut & Operasi Batch</h3>
+                    
+                    <div class="commands-needed">
+                        <h4>🚀 mkdir - Membuat Multiple Direktori</h4>
+                        <ul>
+                            <li><code>mkdir dir1 dir2 dir3</code> - Membuat beberapa direktori sekaligus</li>
+                            <li><code>mkdir -p /path/to/nested/dir</code> - Membuat direktori nested</li>
+                            <li><code>mkdir {www,log,cache}</code> - Brace expansion untuk membuat 3 direktori</li>
+                            <li><code>mkdir -p /var/{www,log,cache}/app</code> - Kombinasi nested + brace expansion</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh mkdir dengan Brace Expansion:</h4>
+                        <pre>$ mkdir project/{src,docs,tests}
+$ tree project
+project/
+├── 📁 src/
+├── 📁 docs/
+└── 📁 tests/
+
+$ mkdir -p /var/{www,log,cache}/{app,config}
+$ tree /var
+/var/
+├── 📁 www/
+│   ├── 📁 app/
+│   └── 📁 config/
+├── 📁 log/
+│   ├── 📁 app/
+│   └── 📁 config/
+└── 📁 cache/
+    ├── 📁 app/
+    └── 📁 config/</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>📝 touch - Membuat Multiple File</h4>
+                        <ul>
+                            <li><code>touch file1.txt file2.txt file3.txt</code> - Membuat beberapa file</li>
+                            <li><code>touch {config,data,log}.txt</code> - Brace expansion untuk file</li>
+                            <li><code>touch /tmp/{backup,temp,cache}.log</code> - Membuat file di lokasi tertentu</li>
+                            <li><code>touch project/src/{main,utils,config}.py</code> - File dengan ekstensi sama</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh touch dengan Brace Expansion:</h4>
+                        <pre>$ touch app/{main,config,utils}.py
+$ tree app
+app/
+├── 📄 main.py
+├── 📄 config.py
+└── 📄 utils.py
+
+$ touch logs/{error,access,debug}.log
+$ ls logs/
+error.log  access.log  debug.log</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🗑️ rm - Menghapus dengan Berbagai Opsi</h4>
+                        <ul>
+                            <li><code>rm file1.txt file2.txt</code> - Hapus beberapa file</li>
+                            <li><code>rm *.txt</code> - Hapus semua file .txt (wildcard)</li>
+                            <li><code>rm -r dirname</code> - Hapus direktori dan isinya (recursive)</li>
+                            <li><code>rm -rf dirname</code> - Force delete tanpa konfirmasi</li>
+                            <li><code>rm -rf /tmp/{old,backup,cache}</code> - Hapus multiple direktori</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Material 3: Permissions -->
+                <div class="exercise-content" id="material3">
+                    <h3>🔐 Permission & Ownership</h3>
+                    
+                    <div class="commands-needed">
+                        <h4>🔢 Sistem Permission (Octal)</h4>
+                        <ul>
+                            <li><strong>4</strong> = Read (r)</li>
+                            <li><strong>2</strong> = Write (w)</li>
+                            <li><strong>1</strong> = Execute (x)</li>
+                            <li><strong>7</strong> = rwx (4+2+1)</li>
+                            <li><strong>6</strong> = rw- (4+2)</li>
+                            <li><strong>5</strong> = r-x (4+1)</li>
+                            <li><strong>0</strong> = --- (no permission)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Permission:</h4>
+                        <pre>755 = rwxr-xr-x (Owner: rwx, Group: r-x, Others: r-x)
+644 = rw-r--r-- (Owner: rw-, Group: r--, Others: r--)
+700 = rwx------ (Owner: rwx, Group: ---, Others: ---)
+600 = rw------- (Owner: rw-, Group: ---, Others: ---)</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>⚙️ chmod - Mengubah Permission</h4>
+                        <ul>
+                            <li><code>chmod 755 script.sh</code> - Set permission executable</li>
+                            <li><code>chmod 644 config.txt</code> - Set permission read/write untuk owner</li>
+                            <li><code>chmod 700 private/</code> - Set direktori private (hanya owner)</li>
+                            <li><code>chmod -R 755 /var/www/</code> - Set permission recursive</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>👤 chown - Mengubah Ownership</h4>
+                        <ul>
+                            <li><code>chown user file.txt</code> - Ubah owner file</li>
+                            <li><code>chown user:group file.txt</code> - Ubah owner dan group</li>
+                            <li><code>chown -R user:group /home/user/</code> - Ubah ownership recursive</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Lengkap Permission Setup:</h4>
+                        <pre>$ mkdir secure_project
+$ chmod 700 secure_project
+$ touch secure_project/secret.txt
+$ chmod 600 secure_project/secret.txt
+$ ls -la secure_project/
+drwx------  2 root root 4096 Jan 21 10:30 .
+drwxr-xr-x  3 root root 4096 Jan 21 10:29 ..
+-rw-------  1 root root    0 Jan 21 10:30 secret.txt</pre>
+                    </div>
+                </div>
+                
+                <!-- Material 4: File Operations -->
+                <div class="exercise-content" id="material4">
+                    <h3>📂 Operasi File Lanjutan</h3>
+                    
+                    <div class="commands-needed">
+                        <h4>📋 cp - Copy Operations</h4>
+                        <ul>
+                            <li><code>cp file1.txt file2.txt</code> - Copy file dalam direktori yang sama</li>
+                            <li><code>cp file1.txt /backup/</code> - Copy ke direktori lain</li>
+                            <li><code>cp -r src/ backup/</code> - Copy direktori recursive</li>
+                            <li><code>cp *.txt /archive/</code> - Copy semua file .txt</li>
+                            <li><code>cp -r {docs,tests} /backup/</code> - Copy multiple direktori</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Copy dengan Full Path:</h4>
+                        <pre># Setup struktur awal
+$ mkdir -p /root/{Documents,Sekolah/Tugas,Backup,Projects/Web}
+$ touch /root/Documents/{report.txt,data.csv,notes.md}
+
+# Copy file dengan rename ke lokasi berbeda
+$ cp /root/Documents/report.txt /root/Sekolah/Tugas/laporan-copy.txt
+$ cp /root/Documents/data.csv /root/Backup/data-backup.csv
+
+# Copy multiple files ke direktori tujuan
+$ cp /root/Documents/*.txt /root/Backup/
+$ cp /root/Documents/{report.txt,notes.md} /root/Projects/Web/
+
+# Copy direktori lengkap dengan isi
+$ cp -r /root/Documents/ /root/Backup/Documents-Full/
+$ cp -r /root/Sekolah/ /root/Backup/School-Backup/
+
+# Copy dengan struktur nested
+$ mkdir -p /var/{www,log,cache}/{app,config}
+$ cp -r /root/Documents/ /var/www/app/docs/</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🔄 mv - Move/Rename Operations</h4>
+                        <ul>
+                            <li><code>mv oldname.txt newname.txt</code> - Rename file dalam direktori sama</li>
+                            <li><code>mv file.txt /new/location/</code> - Move file ke direktori lain</li>
+                            <li><code>mv *.log /logs/</code> - Move semua file .log</li>
+                            <li><code>mv {old1,old2,old3}.txt /archive/</code> - Move multiple files</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Move dengan Full Path:</h4>
+                        <pre># Move file dengan rename
+$ mv /root/Documents/report.txt /root/Sekolah/Tugas/final-report.txt
+$ mv /root/Documents/data.csv /root/Projects/Web/database.csv
+
+# Move multiple files
+$ mv /root/Documents/*.md /root/Sekolah/Tugas/
+$ mv /root/Downloads/{file1,file2,file3}.pdf /root/Documents/
+
+# Move dan reorganisasi direktori
+$ mv /root/old-project/ /root/Projects/archived-project/
+$ mv /root/temp-files/ /tmp/cleanup/
+
+# Move dengan wildcard pattern
+$ mv /root/Downloads/backup-*.zip /root/Backup/
+$ mv /var/log/old-*.log /var/log/archive/
+
+# Rename direktori
+$ mv /root/old-folder-name/ /root/new-folder-name/</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🔍 Wildcard Patterns</h4>
+                        <ul>
+                            <li><code>*</code> - Cocok dengan semua karakter</li>
+                            <li><code>*.txt</code> - Semua file berekstensi .txt</li>
+                            <li><code>data*</code> - File yang dimulai dengan "data"</li>
+                            <li><code>*config*</code> - File yang mengandung "config"</li>
+                            <li><code>?</code> - Cocok dengan satu karakter</li>
+                            <li><code>file?.txt</code> - file1.txt, file2.txt, dll</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tree-structure">
+                        <h4>💡 Contoh Batch Operations:</h4>
+                        <pre>$ mkdir -p workspace/{src,docs,tests,logs}
+$ touch workspace/src/{main,utils,config}.py
+$ touch workspace/docs/{readme,api,guide}.md
+$ touch workspace/tests/{test_main,test_utils}.py
+$ touch workspace/logs/{error,access,debug}.log
+
+# Copy semua Python files ke backup
+$ mkdir backup
+$ cp workspace/**/*.py backup/
+
+# Move semua log files ke archive
+$ mkdir archive
+$ mv workspace/logs/*.log archive/
+
+# Rename dengan pattern
+$ cd workspace/src
+$ mv config.py settings.py</pre>
+                    </div>
+                    
+                    <div class="commands-needed">
+                        <h4>🎯 Tips & Tricks</h4>
+                        <ul>
+                            <li><code>mkdir -p path/to/deep/nested/dir</code> - Buat path lengkap sekaligus</li>
+                            <li><code>cp -r source/{important,backup} dest/</code> - Copy selective folders</li>
+                            <li><code>rm -rf /tmp/cache_*</code> - Hapus semua folder cache</li>
+                            <li><code>find . -name "*.tmp" -delete</code> - Hapus semua file .tmp</li>
+                            <li><code>ls -la | grep "^d"</code> - Lihat hanya direktori</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Practice Exercise Popup -->
     <div id="practicePopup" class="practice-popup">
@@ -1082,7 +1403,6 @@
             <div class="practice-tabs">
                 <button class="exercise-btn active" id="ex1" onclick="selectExercise(1)">Latihan 1</button>
                 <button class="exercise-btn" id="ex2" onclick="selectExercise(2)">Latihan 2</button>
-                <button class="exercise-btn" id="ex3" onclick="selectExercise(3)">Latihan 3</button>
             </div>
             
             <div class="practice-body">
@@ -1117,34 +1437,7 @@
                 
                 <!-- Exercise 2 -->
                 <div class="exercise-content" id="exercise2">
-                    <h3>👤 Latihan 2: Manajemen User dan Permission</h3>
-                    <p><strong>Tujuan:</strong> Membuat user baru dan mengatur permission file</p>
-                    
-                    <div class="tree-structure">
-                        <h4>📁 Struktur yang harus dibuat:</h4>
-                        <pre>developer_workspace/
-├── 📁 private/ (permission 700)
-│   └── 📄 secret.txt (permission 600)
-├── 📁 shared/ (permission 755)
-│   └── 📄 config.txt (permission 644)
-└── 📄 readme.txt (permission 644)</pre>
-                    </div>
-                    
-                    <div class="commands-needed">
-                        <h4>🔧 Perintah yang diperlukan:</h4>
-                        <ul>
-                            <li><code>useradd developer</code> - membuat user baru</li>
-                            <li><code>chmod 700</code> - mengatur permission folder</li>
-                            <li><code>chmod 644</code> - mengatur permission file</li>
-                            <li><code>chown developer</code> - mengubah kepemilikan</li>
-                            <li><code>ls -l</code> - melihat permission detail</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Exercise 3 -->
-                <div class="exercise-content" id="exercise3">
-                    <h3>📂 Latihan 3: Operasi File Lanjutan</h3>
+                    <h3>📂 Latihan 2: Operasi File Lanjutan</h3>
                     <p><strong>Tujuan:</strong> Copy, move file dan membuat konten</p>
                     
                     <div class="tree-structure">
@@ -3468,6 +3761,33 @@ ${hostname} login: <span class="cursor">_</span>`;
             }, 10);
         }
 
+        // Materials popup functions
+        function showMaterialsPopup() {
+            const materialsPopup = document.getElementById('materialsPopup');
+            materialsPopup.classList.add('active');
+        }
+
+        function closeMaterialsPopup() {
+            const materialsPopup = document.getElementById('materialsPopup');
+            materialsPopup.classList.remove('active');
+        }
+
+        function selectMaterial(materialNum) {
+            // Remove active class from all material buttons
+            document.querySelectorAll('#materialsPopup .exercise-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Remove active class from all material content
+            document.querySelectorAll('#materialsPopup .exercise-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Add active class to selected button and content
+            document.getElementById(`mat${materialNum}`).classList.add('active');
+            document.getElementById(`material${materialNum}`).classList.add('active');
+        }
+
         // Practice exercise functions
         function showPracticePopup() {
             const practicePopup = document.getElementById('practicePopup');
@@ -3481,12 +3801,12 @@ ${hostname} login: <span class="cursor">_</span>`;
 
         function selectExercise(exerciseNum) {
             // Remove active class from all exercise buttons
-            document.querySelectorAll('.exercise-btn').forEach(btn => {
+            document.querySelectorAll('#practicePopup .exercise-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             
             // Remove active class from all exercise content
-            document.querySelectorAll('.exercise-content').forEach(content => {
+            document.querySelectorAll('#practicePopup .exercise-content').forEach(content => {
                 content.classList.remove('active');
             });
             
@@ -3588,6 +3908,12 @@ ${hostname} login: <span class="cursor">_</span>`;
             addTouchSupport();
             setupKeyboardNavigation();
             
+            // Setup materials button
+            const materialsButton = document.getElementById('materialsButton');
+            if (materialsButton) {
+                materialsButton.addEventListener('click', showMaterialsPopup);
+            }
+            
             // Setup practice button
             const practiceButton = document.getElementById('practiceButton');
             if (practiceButton) {
@@ -3616,5 +3942,5 @@ ${hostname} login: <span class="cursor">_</span>`;
     <div style="position: fixed; bottom: 5px; left: 50%; transform: translateX(-50%); color: #666; font-family: 'Courier New', monospace; font-size: 10px; z-index: 9999; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 3px; pointer-events: none;">
         © 2025 Created by FoeziArisandiSJ
     </div>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9767a22547e744a7',t:'MTc1NjQyNDIxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97683531b0da44b7',t:'MTc1NjQzMDIzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
